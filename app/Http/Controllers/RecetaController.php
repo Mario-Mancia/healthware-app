@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\InsertarRecetaRequest;
 use App\Models\Bitacora;
+use App\Models\Medicamento;
 use App\Models\Receta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ class RecetaController extends Controller
                 Receta::mostrarTodos(),
                 fn ($receta) => $receta->registroMedico?->id_paciente
             ),
+            'medicamentos' => Medicamento::mostrarTodos(),
         ]);
     }
 

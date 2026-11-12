@@ -7,8 +7,10 @@ use App\Models\Paciente;
 use App\Models\Receta;
 use App\Models\RegistroMedico;
 use App\Models\Usuario;
+use Illuminate\Contracts\Validation\Validator as ContratoValidator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 
 /**
@@ -125,6 +127,28 @@ abstract class SolicitudConPaciente extends FormRequest
 
         return $receta === null
             || $this->puedeAccederAlRegistro($receta->id_registro_medico);
+    }
+
+    /**
+     * Cuando el formulario usa el DUI, los errores del paciente se muestran
+     * bajo ese campo (dui_paciente) en lugar de id_paciente.
+     */
+    protected function failedValidation(ContratoValidator $validator): void
+    {
+        $mensajes = $validator->errors()->messages();
+
+        if ($this->has('dui_paciente') && isset($mensajes['id_paciente'])) {
+            $mensajes['dui_paciente'] = array_merge(
+                $mensajes['dui_paciente'] ?? [],
+                $mensajes['id_paciente']
+            );
+
+            unset($mensajes['id_paciente']);
+        }
+
+        throw (ValidationException::withMessages($mensajes))
+            ->errorBag($this->errorBag)
+            ->redirectTo($this->getRedirectUrl());
     }
 
     /**

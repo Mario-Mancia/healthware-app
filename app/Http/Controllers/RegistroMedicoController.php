@@ -78,10 +78,8 @@ class RegistroMedicoController extends Controller
             ], 404);
         }
 
-        return response()->json([
-            'success' => true,
-            'registroMedico' => $registroMedico,
-        ]);
+        // Se devuelve el modelo tal cual (lo que esperan los scripts de la vista).
+        return response()->json($registroMedico);
     }
 
     /**

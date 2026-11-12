@@ -1,35 +1,145 @@
 HEALTHWARE · TAREAS DEL USUARIO POR FASE
 
-# [fase-03a:inicio]
-FASE 3A · VISTAS BASE Y ADMINISTRACIÓN
+# [fase-01:inicio]
+FASE 1 · DATOS (migraciones, seeders, factories y modelos)
+
+Tareas manuales (en el equipo donde tengas PHP, por ejemplo tu Windows):
+  [ ] 1. Subir los cambios al repositorio y traerlos donde vayas a ejecutar artisan.
+  [ ] 2. Revisar .env: DB_CONNECTION=mysql, DB_DATABASE, DB_USERNAME y DB_PASSWORD.
+         Como ya no existen las tablas sessions, cache ni jobs, debe decir:
+           SESSION_DRIVER=file
+           CACHE_STORE=file
+           QUEUE_CONNECTION=sync
+  [ ] 3. Crear la base de datos si no existe:
+         CREATE DATABASE healthware CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  [ ] 4. Ejecutar:  php artisan migrate:fresh --seed
+         (crea 30 tablas del sistema, la vista vista_usuarios_por_estado y los datos iniciales).
+  [ ] 5. Revisar en MySQL que existan las tablas ordenes, detalle_ordenes, pagos y tarjetas_prueba.
+  [ ] 6. Opcional en .env (si no se definen, se usan los valores por defecto):
+           ADMIN_CORREO=admin@healthware.com
+           ADMIN_CONTRASENHA=HealthWare#2026
+           DEMO_CONTRASENHA=Demo#2026
+
+Datos que crea el seeder:
+  - Administrador inicial: admin@healthware.com (debe cambiar la contraseña al entrar).
+  - Solo en APP_ENV=local, usuarios de demostración con la contraseña DEMO_CONTRASENHA:
+      medico@healthware.com, recepcion@healthware.com, contador@healthware.com
+    más 25 pacientes, citas, atenciones, órdenes y facturas.
+  - Tarjetas de prueba (todas ficticias; CVV y vencimiento en la tabla tarjetas_prueba):
+      4111111111111111  débito, aprobada (saldo 5000)
+      5555555555554444  crédito, aprobada (límite 3000)
+      4012888888881881  débito, fondos insuficientes (saldo 5)
+      5105105105105100  crédito, bloqueada
+      4222222222222     crédito, vencida
+
+Valores que puedes ajustar:
+  - Factura::TASA_IMPUESTO (app/Models/Factura.php): 0.13 = 13 % de impuesto. Ponla en 0 si no aplica.
+  - Precios de los servicios: database/seeders/ServicioSeeder.php (campo precio).
+  - Si no quieres papelera de datos clínicos: quita SoftDeletes de Paciente y RegistroMedico
+    y las líneas softDeletes() de las migraciones de pacientes y registros_medicos.
+
+Decisiones pendientes (si no responde, se asume lo indicado):
+  - Quién crea la orden de servicios: médico y recepcionista.
+  - Pagos: se paga completo en una sola operación (efectivo o tarjeta de prueba).
+  - Administrador: supervisa la facturación (consulta y anula), no emite ni cobra.
+  - Formato del DUI: 00000000-0 (se validará en la fase de FormRequests).
+
+Siguiente: fase 2 (middlewares, seguridad y FormRequests).
+# [fase-01:fin]
+
+# [fase-02:inicio]
+FASE 2 · FLUJO DE DATOS (middlewares, requests, controladores y rutas)
 
 Tareas manuales (en el equipo donde tengas PHP):
-  [ ] 1. Copiar Bootstrap 5 a:
-         public/bootstrap/css/bootstrap.min.css
-         public/bootstrap/js/bootstrap.bundle.min.js
-  [ ] 2. Limpiar las vistas compiladas:  php artisan view:clear
-  [ ] 3. Probar con cada rol (ver fase 1) que el menú lateral muestra solo lo suyo:
-           administrador: todo · médico y recepcionista: su trabajo clínico ·
-           contador: órdenes, facturas, pagos, servicios, anuncios y notificaciones.
-  [ ] 4. Probar: crear un usuario con rol Médico (aparece la sección del doctor),
-         cambiar la foto de perfil (requiere php artisan storage:link) y la contraseña.
-  [ ] 5. Revisar que Bootstrap Icons NO se usa: los iconos son Material Symbols
-         (se cargan desde Google Fonts, requiere internet al abrir el sistema).
+  [ ] 1. Subir los cambios y ejecutar:  php artisan route:list
+         Debe listar todas las rutas sin errores (si algo falla, pega el mensaje).
+  [ ] 2. Ejecutar:  php artisan storage:link
+         (las fotos de perfil se guardan en storage/app/public/media/usuarios).
+  [ ] 3. Si cambiaste .env o config:  php artisan config:clear
+  [ ] 4. Probar el login con cada rol (ver fase 1) y comprobar que:
+           - el administrador entra al dashboard, el contador a facturas y
+             médico y recepcionista a citas;
+           - el administrador inicial debe cambiar su contraseña al entrar.
 
-Importante:
-  - Hasta la fase 3B no existen las pantallas de pacientes, citas, expedientes,
-    recetas, órdenes, facturas, pagos y las papeleras. El menú ya muestra esos
-    enlaces; abrirlos dará error de vista no encontrada hasta entonces.
-  - El dashboard todavía es el de demostración del proyecto actual (datos fijos);
-    el dashboard real por rol es una fase propia.
+Cómo trabajan los formularios (para la fase de vistas):
+  - Pacientes por DUI: el input se llama dui_paciente. Al escribirlo, la vista
+    consulta GET pacientes/dui/{dui} (ruta pacientes.dui) y muestra debajo
+    "nombre_completo". Un médico solo encuentra a los pacientes que atiende.
+  - Usuario nuevo con rol Médico: además de los campos del usuario se envían
+    los datos del doctor en el arreglo "doctor" (doctor[especialidad_id],
+    doctor[dui], doctor[numero_licencia], doctor[fecha_nacimiento],
+    doctor[sexo], doctor[descripcion_profesional]). Todo se guarda en una
+    sola transacción.
+  - Orden de servicios: dui_paciente, id_registro_medico y id_cita
+    (opcionales), notas y detalles[N][id_servicio] y detalles[N][cantidad].
+    El precio sale del catálogo de servicios.
+  - Facturar: POST facturas con id_orden (y descuento o notas opcionales).
+  - Cobrar: POST pagos con id_factura, metodo_pago (efectivo o tarjeta), monto y,
+    según el método, monto_recibido o numero_tarjeta, mes_vencimiento,
+    anio_vencimiento, cvv y tipo_tarjeta.
+  - Foto de perfil: POST perfil/foto con el archivo "foto".
+
+Vistas que las rutas esperan (las crea la fase de vistas):
+  perfil.index, perfil.contrasenha, ordenes.index, pagos.index, facturacion.index,
+  facturacion.detalle, pacientes.papelera, registros_medicos.papelera,
+  pacientes.perfil, pacientes.expediente, doctores.perfil y citas.detalle.
+  Las demás vistas conservan los nombres del proyecto actual.
 
 Cambios respecto al proyecto actual:
-  - Servicios tiene precio; doctores no se crean aparte; medicamentos usa
-    "medicamentos" en lugar de "medicamentos.css"; notificaciones permite marcar
-    como leída; el avatar muestra la foto de perfil.
-  - Un usuario creado por el administrador (o con contraseña restablecida por él)
-    debe cambiar su contraseña al entrar.
+  - medicamentos usa la ruta y el nombre "medicamentos" (antes "medicamentos.css").
+  - Los doctores ya no se crean por separado: se crean con su usuario.
+  - Se quitaron las rutas de índice de pacientes_alergias, pacientes_condiciones,
+    registro_medico_diagnosticos y detalle_recetas (no tenían vista): ahora se
+    gestionan desde el expediente del paciente y las recetas.
+  - Las facturas las emite el contador; ya no existen facturas.insertar ni
+    detalle_facturas.* (el detalle se copia de la orden).
+  - Los catálogos (roles, estados, tipos sanguíneos, etc.) ya tienen
+    FormRequests y validan unicidad; los roles y estados base no se pueden
+    renombrar ni eliminar.
+  - La foto de perfil se valida (JPG, PNG o WEBP, hasta 2 MB) pero no se
+    re-procesa; Laravel genera el nombre del archivo.
 
-Siguiente: fase 3B (pacientes, citas, expedientes, recetas, órdenes, facturas y pagos).
-# [fase-03a:fin]
+Decisiones pendientes (si no responde, se asume lo indicado):
+  - Dashboard por rol: se hace en su propia fase; por ahora solo el
+    administrador recibe el resumen de usuarios por estado.
+  - Correos (usuario nuevo, acciones importantes): fase siguiente.
+  - Exportaciones (PDF con el navegador y CSV): fase siguiente.
+
+Siguiente: fase de vistas y de correos.
+# [fase-02:fin]
+
+# [fase-03b:inicio]
+FASE 3B · VISTAS CLÍNICAS Y DE FACTURACIÓN
+
+Tareas manuales (en el equipo donde tengas PHP):
+  [ ] 1. Volver a ejecutar, en este orden, si no lo hiciste ya con la versión nueva:
+           fase-01-datos.sh · fase-02-flujo.sh · fase-03a-vistas-base.sh
+         Después:  php artisan view:clear
+  [ ] 2. Probar con cada rol (datos de la fase 1):
+           Recepcionista: crear un paciente, agendar una cita escribiendo el DUI
+             (debajo del campo debe aparecer el nombre), crear una orden con servicios.
+           Médico: ver solo a sus pacientes; abrir un expediente; registrar una
+             atención (formulario "Registrar atención", escribe el DUI, elige la cita);
+             agregar alergia, condición y diagnóstico; crear una receta con varios
+             medicamentos; crear una orden.
+           Contador: facturar una orden pendiente (descuento opcional), cobrar en
+             efectivo (cambio) y con tarjeta de prueba (la tabla de tarjetas aparece
+             en el modal solo con APP_ENV=local); probar una tarjeta rechazada.
+           Administrador: ver todo, anular una factura pendiente, ver y restaurar
+             desde las papeleras, consultar la bitácora.
+  [ ] 3. Imprimir una factura (Imprimir o guardar PDF): el navegador la guarda como PDF.
+  [ ] 4. Revisar el IVA (13 %) en app/Models/Factura.php (TASA_IMPUESTO).
+
+Detalles de diseño:
+  - Todo paciente se identifica por su DUI (00000000-0). Un médico solo encuentra
+    a los pacientes que atiende.
+  - Las pantallas de "Registrar atención", "Nueva receta" y "Nueva orden" aceptan
+    ?dui=00000000-0 en la dirección y abren su formulario con el DUI escrito
+    (lo usan los botones del expediente, del perfil y del detalle de la cita).
+  - Las facturas se emiten desde una orden pendiente: el precio sale del catálogo
+    de servicios (columna precio) y el contador solo agrega descuento y notas.
+  - El pago es único y completo; con tarjeta solo se guardan los últimos 4 dígitos.
+  - El dashboard por rol, los correos, las exportaciones (CSV) y la experiencia de
+    usuario final son fases siguientes.
+# [fase-03b:fin]
 

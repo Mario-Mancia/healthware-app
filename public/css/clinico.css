@@ -1,0 +1,216 @@
+/* ============================================================
+   HEALTHWARE - ESTILOS CLÍNICOS Y DE FACTURACIÓN
+   Archivo: public/css/clinico.css
+   Se usa en: pacientes (perfil, expediente, papelera), citas (detalle),
+   registros médicos, recetas, órdenes, facturación y pagos.
+   ============================================================ */
+
+/* ----- Campo de DUI con confirmación del nombre ----- */
+.hw-dui-resultado {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 1.4rem;
+    margin-top: 0.35rem;
+    padding-left: 0.25rem;
+    font-size: 0.82rem;
+}
+
+.hw-dui-resultado[data-estado] { display: flex; }
+.hw-dui-resultado .material-symbols-outlined { font-size: 1.1rem; }
+
+.hw-dui-resultado[data-estado="encontrado"] { color: var(--md-sys-color-primary); font-weight: 600; }
+.hw-dui-resultado[data-estado="buscando"] { color: var(--md-sys-color-on-surface-variant); }
+.hw-dui-resultado[data-estado="no-encontrado"],
+.hw-dui-resultado[data-estado="formato"] { color: var(--md-sys-color-error); }
+
+/* ----- Líneas dinámicas (servicios de una orden, medicamentos de una receta) ----- */
+.hw-lineas-lista { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.hw-linea {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 0.7fr) minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.6rem;
+    padding: 0.75rem;
+    background-color: var(--md-sys-color-surface-container);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-lg);
+}
+
+.hw-linea-receta {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.hw-linea-receta > :first-child { grid-column: span 2; }
+.hw-linea-receta > .hw-linea-instrucciones { grid-column: span 5; }
+
+.hw-linea-subtotal {
+    align-self: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    text-align: right;
+}
+
+@media (max-width: 767.98px) {
+    .hw-linea,
+    .hw-linea-receta { grid-template-columns: 1fr 1fr; }
+    .hw-linea > :first-child,
+    .hw-linea-receta > :first-child,
+    .hw-linea-receta > .hw-linea-instrucciones { grid-column: 1 / -1; }
+}
+
+.hw-orden-total {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    padding: 0.85rem 1rem;
+    color: var(--md-sys-color-on-primary-container);
+    background-color: var(--md-sys-color-primary-container);
+    border-radius: var(--md-sys-shape-md);
+    font-weight: 700;
+}
+
+/* ----- Expediente clínico ----- */
+.exp-alerta {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 1.1rem;
+    color: var(--md-sys-color-on-error-container);
+    background-color: var(--md-sys-color-error-container);
+    border-radius: var(--md-sys-shape-lg);
+    font-size: 0.9rem;
+}
+
+.exp-alerta .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+
+.exp-resumen {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.75rem;
+    padding: 0 1.25rem 1.25rem;
+}
+
+.exp-dato {
+    padding: 0.75rem 0.9rem;
+    background-color: var(--md-sys-color-surface-container);
+    border-radius: var(--md-sys-shape-md);
+}
+
+.exp-dato dt {
+    margin: 0;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.exp-dato dd { margin: 0.15rem 0 0; font-size: 0.92rem; }
+
+.exp-registro {
+    margin: 0 1.25rem 1rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-lg);
+}
+
+.exp-registro-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+
+.exp-registro-cabecera h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+
+.exp-signos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.6rem 0;
+}
+
+.exp-signo {
+    padding: 0.25rem 0.6rem;
+    color: var(--md-sys-color-on-surface-variant);
+    background-color: var(--md-sys-color-surface-container);
+    border-radius: var(--md-sys-shape-md);
+    font-size: 0.78rem;
+}
+
+.exp-signo strong { color: var(--md-sys-color-on-surface); }
+
+.exp-bloque { margin-top: 0.75rem; }
+.exp-bloque h4 {
+    margin: 0 0 0.35rem;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.exp-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.exp-chips form { display: inline; }
+
+.exp-seccion-cuerpo { padding: 0 1.25rem 1.25rem; }
+
+/* ----- Facturación y pagos ----- */
+.fac-saldo {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.4rem;
+    font-weight: 700;
+}
+
+.fac-saldo.is-pendiente { color: var(--md-sys-color-error); }
+.fac-saldo.is-pagado { color: var(--md-sys-color-primary); }
+
+.fac-anulada {
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    color: var(--md-sys-color-on-error-container);
+    background-color: var(--md-sys-color-error-container);
+    border-radius: var(--md-sys-shape-md);
+    font-size: 0.9rem;
+}
+
+.fac-metodos { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
+
+.fac-metodo {
+    flex: 1 1 10rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-lg);
+}
+
+.fac-metodo:has(input:checked) {
+    border-color: var(--md-sys-color-primary);
+    background-color: var(--md-sys-color-primary-container);
+}
+
+.fac-tarjetas-prueba {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px dashed var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-md);
+    font-size: 0.8rem;
+}
+
+.fac-tarjetas-prueba summary { cursor: pointer; font-weight: 600; }
+.fac-tarjetas-prueba table { margin-top: 0.5rem; }
+
+@media print {
+    .hw-dui-resultado,
+    .fac-tarjetas-prueba { display: none !important; }
+}

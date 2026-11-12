@@ -7,6 +7,7 @@ use App\Http\Requests\EmitirFacturaRequest;
 use App\Models\Bitacora;
 use App\Models\Factura;
 use App\Models\Orden;
+use App\Models\TarjetaPrueba;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -46,6 +47,10 @@ class FacturaController extends Controller
 
         return view('facturacion.detalle', [
             'factura' => $factura,
+            // Solo en desarrollo: tarjetas ficticias para probar el cobro (con su CVV).
+            'tarjetasPrueba' => app()->environment('local')
+                ? TarjetaPrueba::mostrarTodos()->each->makeVisible('cvv')
+                : collect(),
         ]);
     }
 

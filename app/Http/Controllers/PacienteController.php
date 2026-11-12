@@ -6,7 +6,11 @@ use App\Http\Requests\ActualizarPacienteRequest;
 use App\Http\Requests\InsertarPacienteRequest;
 use App\Models\Bitacora;
 use App\Models\Cita;
+use App\Models\Alergia;
+use App\Models\CondicionMedica;
+use App\Models\Diagnostico;
 use App\Models\Paciente;
+use App\Models\RegistroMedico;
 use App\Models\TipoSanguineo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -105,19 +109,28 @@ class PacienteController extends Controller
         ];
 
         // Las citas vigentes ayudan a vincular un registro médico u orden.
+        $respuesta['citas'] = Cita::query()
+            ->where('id_paciente', $paciente->getKey())
+            ->whereNotIn('estado', ['cancelada', 'no_asistio'])
+            ->when(
+                $this->esMedico(),
+                fn ($consulta) => $consulta->where('id_doctor', $this->doctorActual()->getKey())
+            )
+            ->orderByDesc('fecha_cita')
+            ->limit(10)
+            ->get(['id', 'fecha_cita', 'hora_inicio', 'estado']);
+
+        // Los registros médicos (para recetas y órdenes) solo los ve el personal clínico.
         if ($this->esMedico() || $this->esAdministrador()) {
-            $citas = Cita::query()
+            $respuesta['registros'] = RegistroMedico::query()
                 ->where('id_paciente', $paciente->getKey())
-                ->whereNotIn('estado', ['cancelada', 'no_asistio'])
                 ->when(
                     $this->esMedico(),
                     fn ($consulta) => $consulta->where('id_doctor', $this->doctorActual()->getKey())
                 )
-                ->orderByDesc('fecha_cita')
+                ->orderByDesc('fecha_registro')
                 ->limit(10)
-                ->get(['id', 'fecha_cita', 'hora_inicio', 'estado']);
-
-            $respuesta['citas'] = $citas;
+                ->get(['id', 'fecha_registro', 'motivo_consulta']);
         }
 
         return response()->json($respuesta);
@@ -132,8 +145,20 @@ class PacienteController extends Controller
             return $this->prohibidoRedirigir('pacientes');
         }
 
+        // Citas recientes (un médico solo ve las suyas).
+        $citas = $paciente->citas()
+            ->with('doctor.usuario')
+            ->when(
+                $this->esMedico(),
+                fn ($consulta) => $consulta->where('id_doctor', $this->doctorActual()->getKey())
+            )
+            ->orderByDesc('fecha_cita')
+            ->limit(8)
+            ->get();
+
         return view('pacientes.perfil', [
             'paciente' => Paciente::buscarPacienteXId($paciente->getKey()),
+            'citas' => $citas,
         ]);
     }
 
@@ -176,6 +201,10 @@ class PacienteController extends Controller
 
         return view('pacientes.expediente', [
             'paciente' => $paciente,
+            'alergias' => Alergia::mostrarTodos(),
+            'condicionesMedicas' => CondicionMedica::mostrarTodos(),
+            'diagnosticos' => Diagnostico::mostrarTodos(),
+            'puedeRegistrar' => $this->esMedico(),
         ]);
     }
 

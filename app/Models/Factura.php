@@ -205,6 +205,7 @@ class Factura extends Model
         return static::with([
             'paciente',
             'orden',
+            'pagos',
         ])
             ->orderByDesc('fecha_emision')
             ->get();

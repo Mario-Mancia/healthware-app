@@ -83,10 +83,11 @@ class CitaController extends Controller
             ], 404);
         }
 
-        return response()->json([
-            'success' => true,
-            'cita' => $cita,
-        ]);
+        // Se devuelve el modelo tal cual (lo que esperan los scripts de la vista),
+        // más el DUI del paciente para el formulario de edición.
+        $cita->setAttribute('dui_paciente', $cita->paciente?->numero_identificacion);
+
+        return response()->json($cita);
     }
 
     public function actualizarCita(

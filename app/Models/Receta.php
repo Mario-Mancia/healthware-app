@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class Receta extends Model
@@ -90,10 +91,27 @@ class Receta extends Model
         ])->find($id);
     }
 
+    /**
+     * Inserta una receta. Si llega la clave "detalles" (medicamentos), se
+     * crean en la misma transacción; cada línea se valida con DetalleReceta.
+     */
     public static function insertar(array $datos): Receta
     {
-        $datos = static::rules($datos);
+        $detalles = $datos['detalles'] ?? [];
+        unset($datos['detalles']);
 
-        return static::create($datos);
+        return DB::transaction(function () use ($datos, $detalles) {
+            $datos = static::rules($datos);
+
+            $receta = static::create($datos);
+
+            foreach ($detalles as $detalle) {
+                DetalleReceta::insertar(
+                    ['id_receta' => $receta->getKey()] + $detalle
+                );
+            }
+
+            return $receta->load('detalles.medicamento');
+        });
     }
 }
