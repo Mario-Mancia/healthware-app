@@ -72,12 +72,41 @@ class Notificacion extends Model
             ->get();
     }
 
-    public static function buscarNotificacionXId(int $id): Collection|Model // En caso de fallo, cambiamos a tipo Notificacion
+    public static function buscarNotificacionXId(int $id): ?Notificacion
     {
         return self::with('usuario')->find($id);
     }
 
     // Inserción
+
+    /**
+     * Notificaciones de un usuario, de la más reciente a la más antigua.
+     */
+    public static function mostrarDeUsuario(int $idUsuario): Collection
+    {
+        return self::with('usuario')
+            ->where('id_usuario', $idUsuario)
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * Marca como leída una notificación del usuario indicado.
+     */
+    public static function marcarLeida(int $id, int $idUsuario): bool
+    {
+        $notificacion = self::where('id_usuario', $idUsuario)->find($id);
+
+        if (!$notificacion) {
+            return false;
+        }
+
+        if ($notificacion->leido_en !== null) {
+            return true;
+        }
+
+        return $notificacion->update(['leido_en' => now()]);
+    }
 
     public static function insertar(array $datos): Notificacion
     {

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class CondicionMedica extends Model
 {
@@ -21,13 +22,14 @@ class CondicionMedica extends Model
     /**
      * Reglas de validación para el modelo.
      */
-    private static function validaciones($id = null): array
+    public static function validaciones($id = null): array
     {
         return [
             'condicion_medica' => [
                 'required',
                 'string',
                 'max:50',
+                Rule::unique('condiciones_medicas', 'condicion_medica')->ignore($id),
             ],
             'descripcion' => [
                 'nullable',

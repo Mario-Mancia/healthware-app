@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 
 class Usuario extends Authenticatable
@@ -230,9 +231,44 @@ class Usuario extends Authenticatable
     /**
      * Inserta un nuevo usuario.
      */
+    /**
+     * Indica si un rol es el de médico (ignora mayúsculas y tildes).
+     */
+    public static function rolEsMedico(int $idRol): bool
+    {
+        $rol = Rol::find($idRol);
+
+        return $rol !== null
+            && Str::lower(Str::ascii(trim($rol->rol))) === Str::lower(Str::ascii(self::ROL_MEDICO));
+    }
+
+    /**
+     * Inserta un nuevo usuario. Si su rol es Médico, en la misma transacción
+     * se crea su registro profesional en la tabla doctores con los datos que
+     * llegan en la clave "doctor".
+     */
     public static function insertar(array $datos): Usuario
     {
-        return static::create($datos);
+        $datosDoctor = $datos['doctor'] ?? null;
+        unset($datos['doctor']);
+
+        return DB::transaction(function () use ($datos, $datosDoctor) {
+            $usuario = static::create($datos);
+
+            if (static::rolEsMedico((int) $usuario->id_rol)) {
+                if (!is_array($datosDoctor)) {
+                    throw ValidationException::withMessages([
+                        'doctor' => 'Los datos del médico son obligatorios para este rol.',
+                    ]);
+                }
+
+                $datosDoctor['usuario_id'] = $usuario->getKey();
+
+                Doctor::insertar($datosDoctor);
+            }
+
+            return $usuario->load(['rol', 'estado', 'doctor']);
+        });
     }
 
     /**
@@ -269,7 +305,73 @@ class Usuario extends Authenticatable
             unset($datos['contrasenha']);
         }
 
-        return $usuario->update($datos);
+        $datosDoctor = $datos['doctor'] ?? null;
+        unset($datos['doctor']);
+
+        return DB::transaction(function () use ($usuario, $datos, $datosDoctor) {
+            $eraMedico = static::rolEsMedico((int) $usuario->id_rol);
+            $seraMedico = static::rolEsMedico((int) ($datos['id_rol'] ?? $usuario->id_rol));
+            $doctor = Doctor::where('usuario_id', $usuario->getKey())->first();
+
+            /*
+             * Si deja de ser médico, su registro profesional solo se elimina
+             * cuando no tiene citas ni registros médicos asociados.
+             */
+            if ($eraMedico && !$seraMedico && $doctor) {
+                if (
+                    $doctor->citas()->exists() ||
+                    $doctor->registrosMedicos()->withTrashed()->exists()
+                ) {
+                    throw ValidationException::withMessages([
+                        'id_rol' => 'No se puede cambiar el rol: el médico tiene citas o registros médicos asociados.',
+                    ]);
+                }
+
+                $doctor->delete();
+            }
+
+            $actualizado = $usuario->update($datos);
+
+            if ($seraMedico) {
+                if ($doctor) {
+                    if (is_array($datosDoctor)) {
+                        $doctor->update($datosDoctor);
+                    }
+                } else {
+                    if (!is_array($datosDoctor)) {
+                        throw ValidationException::withMessages([
+                            'doctor' => 'Los datos del médico son obligatorios para este rol.',
+                        ]);
+                    }
+
+                    $datosDoctor['usuario_id'] = $usuario->getKey();
+
+                    Doctor::insertar($datosDoctor);
+                }
+            }
+
+            return $actualizado;
+        });
+    }
+
+    /**
+     * Indica si el usuario es el único administrador activo del sistema.
+     */
+    public static function esUltimoAdministrador(int $id): bool
+    {
+        $idRolAdministrador = (int) Rol::where('rol', self::ROL_ADMINISTRADOR)->value('id');
+        $usuario = static::find($id);
+
+        if (!$usuario || (int) $usuario->id_rol !== $idRolAdministrador) {
+            return false;
+        }
+
+        $activos = static::query()
+            ->where('id_rol', $idRolAdministrador)
+            ->where('id_estado', Estado::where('estado', 'ACTIVO')->value('id'))
+            ->count();
+
+        return $activos <= 1;
     }
 
     /**

@@ -130,6 +130,19 @@ class Doctor extends Model
     /**
      * Valida los datos recibidos y devuelve los datos validados.
      */
+    /**
+     * Reglas del doctor cuando se crea junto con su usuario: son las mismas
+     * de validaciones() sin usuario_id, que se asigna en la transacción.
+     */
+    public static function validacionesParaUsuario($id = null): array
+    {
+        $reglas = static::validaciones($id);
+
+        unset($reglas['usuario_id']);
+
+        return $reglas;
+    }
+
     public static function rules(array $datos, $id = null): array
     {
         return Validator::make(

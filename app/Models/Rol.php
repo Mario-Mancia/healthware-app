@@ -6,6 +6,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class Rol extends Model
 {
@@ -21,13 +22,14 @@ class Rol extends Model
     /**
      * Reglas de validación para el modelo.
      */
-    private static function validaciones($id = null): array
+    public static function validaciones($id = null): array
     {
         return [
             'rol' => [
                 'required',
                 'string',
                 'max:50',
+                Rule::unique('roles', 'rol')->ignore($id),
             ],
             'descripcion' => [
                 'nullable',

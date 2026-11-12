@@ -24,7 +24,7 @@ class Medicamento extends Model
     /**
      * Reglas de validación para el modelo.
      */
-    private static function validaciones($id = null): array
+    public static function validaciones($id = null): array
     {
         return [
             'nombre' => [

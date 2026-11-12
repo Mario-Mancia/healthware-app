@@ -155,6 +155,21 @@ class HorarioDoctor extends Model
     /**
      * Busca un horario por su identificador.
      */
+    /**
+     * Horarios de un doctor, ordenados por día y hora.
+     */
+    public static function mostrarDeDoctor(int $idDoctor): Collection
+    {
+        return static::with([
+            'doctor.usuario',
+            'doctor.especialidad',
+        ])
+            ->where('id_doctor', $idDoctor)
+            ->orderBy('dia_semana')
+            ->orderBy('hora_inicio')
+            ->get();
+    }
+
     public static function buscarHorarioXId(
         int $id
     ): ?HorarioDoctor {

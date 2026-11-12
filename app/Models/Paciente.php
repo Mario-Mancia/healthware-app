@@ -307,6 +307,28 @@ class Paciente extends Model
     }
 
     /**
+     * Ids de los pacientes que atiende un médico (una sola consulta).
+     */
+    public static function idsAtendidosPor(int $idDoctor): array
+    {
+        $conCita = Cita::query()
+            ->where('id_doctor', $idDoctor)
+            ->whereNotIn('estado', ['cancelada', 'no_asistio'])
+            ->pluck('id_paciente');
+
+        $conRegistro = RegistroMedico::query()
+            ->where('id_doctor', $idDoctor)
+            ->pluck('id_paciente');
+
+        return $conCita
+            ->merge($conRegistro)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * Pacientes que atiende un médico (ver atendidoPor).
      */
     public static function mostrarTodosDeDoctor(int $idDoctor): Collection

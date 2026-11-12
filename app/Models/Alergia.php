@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class Alergia extends Model
 {
@@ -21,13 +22,14 @@ class Alergia extends Model
     /**
      * Reglas de validación para el modelo.
      */
-    private static function validaciones($id = null): array
+    public static function validaciones($id = null): array
     {
         return [
             'alergia' => [
                 'required',
                 'string',
                 'max:50',
+                Rule::unique('alergias', 'alergia')->ignore($id),
             ],
             'descripcion' => [
                 'nullable',

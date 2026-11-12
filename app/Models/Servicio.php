@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class Servicio extends Model
 {
@@ -39,13 +40,14 @@ class Servicio extends Model
     /**
      * Reglas de validación para el modelo.
      */
-    private static function validaciones($id = null): array
+    public static function validaciones($id = null): array
     {
         return [
             'servicio' => [
                 'required',
                 'string',
                 'max:50',
+                Rule::unique('servicios', 'servicio')->ignore($id),
             ],
             'descripcion' => [
                 'nullable',

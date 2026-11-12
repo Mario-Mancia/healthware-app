@@ -67,6 +67,11 @@ class RegistroMedico extends Model
         return $this->hasMany(Receta::class, 'id_registro_medico');
     }
 
+    public function diagnosticos(): HasMany
+    {
+        return $this->hasMany(RegistroMedicoDiagnostico::class, 'id_registro_medico');
+    }
+
     public function ordenes(): HasMany
     {
         return $this->hasMany(Orden::class, 'id_registro_medico');

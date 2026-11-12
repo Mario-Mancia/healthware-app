@@ -199,6 +199,22 @@ class Cita extends Model
             ->get();
     }
 
+    /**
+     * Citas de un doctor, en orden de fecha y hora.
+     */
+    public static function mostrarDeDoctor(int $idDoctor): Collection
+    {
+        return static::with([
+            'paciente',
+            'doctor.usuario',
+            'doctor.especialidad',
+        ])
+            ->where('id_doctor', $idDoctor)
+            ->orderBy('fecha_cita')
+            ->orderBy('hora_inicio')
+            ->get();
+    }
+
     public static function buscarCitaXId(int $id): ?Cita
     {
         return static::with([
