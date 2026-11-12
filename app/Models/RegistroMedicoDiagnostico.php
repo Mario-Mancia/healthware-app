@@ -11,11 +11,14 @@ use Illuminate\Validation\Rule;
 
 class RegistroMedicoDiagnostico extends Model
 {
+    use \App\Models\Concerns\RegistraAutoria;
+
     use HasFactory;
 
     protected $table = 'registro_medico_diagnosticos';
 
     protected $fillable = [
+        'id_usuario_creacion',
         'id_registro_medico',
         'id_diagnostico',
         'notas',

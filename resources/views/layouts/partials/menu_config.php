@@ -97,6 +97,24 @@ $menuModulos = [
                 ],
             ],
             [
+                'ruta' => 'referencias',
+                'etiqueta' => 'Referencias médicas',
+                'icono' => 'swap_horiz',
+                'roles' => $rolesTodos,
+            ],
+            [
+                'ruta' => 'relaciones',
+                'etiqueta' => 'Relaciones asistenciales',
+                'icono' => 'diversity_3',
+                'roles' => $rolesAdminMedico,
+            ],
+            [
+                'ruta' => 'accesos_excepcionales',
+                'etiqueta' => 'Accesos excepcionales',
+                'icono' => 'emergency',
+                'roles' => $rolesAdminMedico,
+            ],
+            [
                 'ruta' => 'registros_medicos.papelera',
                 'etiqueta' => 'Papelera de expedientes',
                 'icono' => 'delete_sweep',
@@ -156,6 +174,19 @@ $menuModulos = [
                 'ruta' => 'servicios',
                 'etiqueta' => 'Servicios y precios',
                 'icono' => 'sell',
+                'roles' => $rolesTodosConContador,
+            ],
+        ],
+    ],
+    [
+        'id' => 'workspace',
+        'titulo' => 'Mi espacio',
+        'icono' => 'task_alt',
+        'enlaces' => [
+            [
+                'ruta' => 'tareas',
+                'etiqueta' => 'Mis tareas',
+                'icono' => 'checklist',
                 'roles' => $rolesTodosConContador,
             ],
         ],
@@ -243,6 +274,12 @@ $menuModulos = [
                 'ruta' => 'bitacora',
                 'etiqueta' => 'Bitácora del sistema',
                 'icono' => 'history',
+                'roles' => $soloAdmin,
+            ],
+            [
+                'ruta' => 'auditoria_expedientes',
+                'etiqueta' => 'Auditoría de expedientes',
+                'icono' => 'policy',
                 'roles' => $soloAdmin,
             ],
         ],

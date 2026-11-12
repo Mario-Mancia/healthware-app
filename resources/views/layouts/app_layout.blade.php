@@ -99,6 +99,9 @@
     $iconoNotificacion = function ($notificacion) {
         $tipo = mb_strtolower((string) ($notificacion->tipo ?? ''));
         return match (true) {
+            str_contains($tipo, 'referencia') => 'swap_horiz',
+            str_contains($tipo, 'tarea') => 'task_alt',
+            str_contains($tipo, 'clinica') => 'clinical_notes',
             str_contains($tipo, 'cita') => 'event',
             str_contains($tipo, 'factur') || str_contains($tipo, 'pago') => 'receipt_long',
             str_contains($tipo, 'receta') => 'medication',
@@ -206,7 +209,7 @@
                     <div class="app-notif-list">
                         @forelse($notifRecientes as $notificacion)
                             @php $sinLeer = empty($notificacion->leido_en); @endphp
-                            <a href="{{ route('notificaciones') }}"
+                            <a href="{{ $notificacion->enlace ?: route('notificaciones') }}"
                                class="app-notif-item {{ $sinLeer ? 'is-unread' : '' }}">
                                 <span class="app-notif-icon">
                                     <span class="material-symbols-outlined">{{ $iconoNotificacion($notificacion) }}</span>

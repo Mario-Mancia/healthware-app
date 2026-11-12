@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\InsertarRegistroMedicoDiagnosticoRequest;
+use App\Events\RegistroClinicoActualizado;
+use App\Models\AuditoriaExpediente;
 use App\Models\Bitacora;
 use App\Models\RegistroMedico;
 use App\Models\RegistroMedicoDiagnostico;
@@ -20,6 +22,23 @@ class RegistroMedicoDiagnosticoController extends Controller
         $registro = RegistroMedicoDiagnostico::insertar(
             $request->validated()
         );
+
+        $idPacienteRegistro = $this->idPacienteDelRegistro($registro->id_registro_medico);
+
+        AuditoriaExpediente::registrar(
+            (int) $idPacienteRegistro,
+            AuditoriaExpediente::MODIFICACION,
+            'diagnostico_registro',
+            $registro->getKey(),
+            null,
+            ['accion' => 'agregado', 'registro_medico' => $registro->id_registro_medico, 'diagnostico' => $registro->id_diagnostico]
+        );
+
+        event(new RegistroClinicoActualizado(
+            (int) $idPacienteRegistro,
+            (int) $this->doctorActual()?->getKey(),
+            'diagnostico_registro'
+        ));
 
         Bitacora::registrar(
             Bitacora::CREADO,
@@ -45,7 +64,7 @@ class RegistroMedicoDiagnosticoController extends Controller
 
         if (
             !$registro ||
-            !$this->puedeVerPaciente($this->idPacienteDelRegistro($registro->id_registro_medico))
+            !$this->puedeConsultarExpediente($this->idPacienteDelRegistro($registro->id_registro_medico))
         ) {
             return response()->json([
                 'success' => false,
@@ -68,11 +87,25 @@ class RegistroMedicoDiagnosticoController extends Controller
         $idDiagnostico =
             $registroMedicoDiagnostico->id_diagnostico;
 
-        if (!$this->puedeVerPaciente($this->idPacienteDelRegistro($idRegistroMedico))) {
-            return $this->prohibidoRedirigir('registros_medicos');
+        $registroDelDiagnostico = RegistroMedico::find($idRegistroMedico);
+
+        if (!$registroDelDiagnostico || !$this->usuarioActual()?->can('escribir', $registroDelDiagnostico)) {
+            return $this->prohibidoRedirigir(
+                'registros_medicos',
+                'Solo el médico autor del registro puede modificar sus diagnósticos.'
+            );
         }
 
         if (RegistroMedicoDiagnostico::eliminar($id)) {
+            AuditoriaExpediente::registrar(
+                (int) $registroDelDiagnostico->id_paciente,
+                AuditoriaExpediente::MODIFICACION,
+                'diagnostico_registro',
+                $id,
+                null,
+                ['accion' => 'quitado', 'registro_medico' => $idRegistroMedico, 'diagnostico' => $idDiagnostico]
+            );
+
             Bitacora::registrar(
                 Bitacora::ELIMINADO,
                 'REG_MED_DIA',

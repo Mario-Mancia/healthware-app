@@ -45,6 +45,10 @@
                         <span class="material-symbols-outlined">assignment</span>
                         Nueva orden
                     </a>
+                    <a href="{{ route('referencias', ['dui' => $dui]) }}" class="btn btn-tonal">
+                        <span class="material-symbols-outlined">swap_horiz</span>
+                        Referir paciente
+                    </a>
                 @endif
                 <button type="button" class="btn btn-outline-primary" onclick="window.print()">
                     <span class="material-symbols-outlined">print</span>
@@ -59,6 +63,16 @@
                 <div>
                     <strong>Alergias graves:</strong>
                     {{ $alergiasGraves->map(fn ($a) => $a->alergia->alergia ?? '—')->implode(', ') }}
+                </div>
+            </div>
+        @endif
+
+        @if(!empty($accesoExcepcional))
+            <div class="exp-alerta" role="status">
+                <span class="material-symbols-outlined">emergency</span>
+                <div>
+                    <strong>Acceso excepcional (solo lectura).</strong>
+                    Vigente hasta {{ $accesoExcepcional->fecha_expiracion->format('d/m/Y H:i') }}. Cada consulta queda auditada.
                 </div>
             </div>
         @endif
@@ -103,14 +117,17 @@
                                 <span class="hw-status-dot"></span>{{ ucfirst($registro->gravedad) }}
                             </span>
                         </div>
+                        <p class="mb-1 hw-muted">Registrada por {{ $registro->creadoPor ? trim($registro->creadoPor->nombres . ' ' . $registro->creadoPor->apellidos) : 'autor no registrado' }}</p>
                         @if($registro->reaccion)<p class="mb-1"><strong>Reacción:</strong> {{ $registro->reaccion }}</p>@endif
                         @if($registro->notas)<p class="mb-1 hw-muted">{{ $registro->notas }}</p>@endif
+                        @if($puedeRegistrar && (is_null($registro->id_usuario_creacion) || (int) $registro->id_usuario_creacion === (int) auth()->id()))
                         <form method="POST" action="{{ route('pacientes_alergias.eliminar', ['pacienteAlergia' => $registro->id]) }}"
                               data-confirmar="¿Eliminar esta alergia del expediente?">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-text btn-sm">Quitar</button>
                         </form>
+                        @endif
                     </div>
                 @empty
                     <p class="hw-muted mb-0">No hay alergias registradas.</p>
@@ -139,13 +156,16 @@
                             <h3>{{ $registro->condicionMedica->condicion_medica ?? '—' }}</h3>
                             <span class="hw-muted">{{ $registro->fecha_diagnostico ? 'Diagnosticada el ' . $fmtFecha($registro->fecha_diagnostico) : 'Sin fecha de diagnóstico' }}</span>
                         </div>
+                        <p class="mb-1 hw-muted">Registrada por {{ $registro->creadoPor ? trim($registro->creadoPor->nombres . ' ' . $registro->creadoPor->apellidos) : 'autor no registrado' }}</p>
                         @if($registro->notas)<p class="mb-1 hw-muted">{{ $registro->notas }}</p>@endif
+                        @if($puedeRegistrar && (is_null($registro->id_usuario_creacion) || (int) $registro->id_usuario_creacion === (int) auth()->id()))
                         <form method="POST" action="{{ route('pacientes_condiciones.eliminar', ['pacienteCondicion' => $registro->id]) }}"
                               data-confirmar="¿Eliminar esta condición del expediente?">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-text btn-sm">Quitar</button>
                         </form>
+                        @endif
                     </div>
                 @empty
                     <p class="hw-muted mb-0">No hay condiciones médicas registradas.</p>
@@ -165,6 +185,7 @@
             @forelse($paciente->registrosMedicos as $registro)
                 @php
                     $signos = $registro->signosVitales;
+                    $esAutorRegistro = $puedeRegistrar && (int) $registro->id_doctor === (int) ($idDoctorActual ?? 0);
                     $doctorRegistro = trim(($registro->doctor?->usuario?->nombres ?? '') . ' ' . ($registro->doctor?->usuario?->apellidos ?? ''));
                 @endphp
                 <article class="exp-registro">
@@ -197,7 +218,7 @@
                         <div class="exp-chips">
                             @forelse($registro->diagnosticos as $asociado)
                                 <span class="hw-chip" title="{{ $asociado->notas }}">{{ $asociado->diagnostico->diagnostico ?? '—' }}</span>
-                                @if($puedeRegistrar)
+                                @if($esAutorRegistro)
                                     <form method="POST" action="{{ route('registro_medico_diagnosticos.eliminar', ['registroMedicoDiagnostico' => $asociado->id]) }}"
                                           data-confirmar="¿Quitar este diagnóstico del registro?">
                                         @csrf
@@ -208,7 +229,7 @@
                             @empty
                                 <span class="hw-muted">Sin diagnósticos asociados.</span>
                             @endforelse
-                            @if($puedeRegistrar)
+                            @if($esAutorRegistro)
                                 <button type="button" class="btn btn-tonal btn-sm"
                                         data-bs-toggle="modal" data-bs-target="#modalNuevoDiagnostico"
                                         data-registro-id="{{ $registro->id }}"

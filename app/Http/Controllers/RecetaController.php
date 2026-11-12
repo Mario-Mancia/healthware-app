@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\InsertarRecetaRequest;
+use App\Events\RegistroClinicoActualizado;
+use App\Models\AuditoriaExpediente;
 use App\Models\Bitacora;
 use App\Models\Medicamento;
 use App\Models\Receta;
@@ -19,9 +21,13 @@ class RecetaController extends Controller
     public function index(): View
     {
         return view('recetas.index', [
-            'recetas' => $this->filtrarPorPaciente(
-                Receta::mostrarTodos(),
-                fn ($receta) => $receta->registroMedico?->id_paciente
+            'recetas' => $this->ocultarClinicoSinAcceso(
+                $this->filtrarPorPaciente(
+                    Receta::mostrarTodos(),
+                    fn ($receta) => $receta->registroMedico?->id_paciente
+                ),
+                fn ($receta) => $receta->registroMedico?->id_paciente,
+                ['notas']
             ),
             'medicamentos' => Medicamento::mostrarTodos(),
         ]);
@@ -33,6 +39,21 @@ class RecetaController extends Controller
         $receta = Receta::insertar(
             $request->validated()
         );
+
+        $idPacienteReceta = (int) $receta->registroMedico?->id_paciente;
+
+        AuditoriaExpediente::registrar(
+            $idPacienteReceta,
+            AuditoriaExpediente::CREACION,
+            'receta',
+            $receta->getKey()
+        );
+
+        event(new RegistroClinicoActualizado(
+            $idPacienteReceta,
+            (int) $this->doctorActual()?->getKey(),
+            'receta'
+        ));
 
         Bitacora::registrar(
             Bitacora::CREADO,
@@ -52,12 +73,19 @@ class RecetaController extends Controller
 
         if (
             !$receta ||
-            !$this->puedeVerPaciente($receta->registroMedico?->id_paciente)
+            !$this->puedeConsultarExpediente($receta->registroMedico?->id_paciente)
         ) {
             return response()->json([
                 'mensaje' => 'La receta médica no existe.',
             ], 404);
         }
+
+        AuditoriaExpediente::registrar(
+            (int) $receta->registroMedico?->id_paciente,
+            AuditoriaExpediente::CONSULTA,
+            'receta',
+            $receta->getKey()
+        );
 
         return response()->json($receta);
     }

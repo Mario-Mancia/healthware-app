@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\InsertarPacienteCondicionRequest;
+use App\Events\RegistroClinicoActualizado;
+use App\Models\AuditoriaExpediente;
 use App\Models\Bitacora;
 use App\Models\PacienteCondicion;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +22,19 @@ class PacienteCondicionController extends Controller
         $pacienteCondicion = PacienteCondicion::insertar(
             $request->validated()
         );
+
+        AuditoriaExpediente::registrar(
+            $pacienteCondicion->id_paciente,
+            AuditoriaExpediente::CREACION,
+            'condicion_paciente',
+            $pacienteCondicion->getKey()
+        );
+
+        event(new RegistroClinicoActualizado(
+            $pacienteCondicion->id_paciente,
+            (int) $this->doctorActual()?->getKey(),
+            'condicion_paciente'
+        ));
 
         Bitacora::registrar(
             Bitacora::CREADO,
@@ -40,7 +55,7 @@ class PacienteCondicionController extends Controller
 
         if (
             !$pacienteCondicion ||
-            !$this->puedeVerPaciente($pacienteCondicion->id_paciente)
+            !$this->puedeConsultarExpediente($pacienteCondicion->id_paciente)
         ) {
             return response()->json([
                 'mensaje' => 'El registro de condición médica no existe.',
@@ -56,11 +71,21 @@ class PacienteCondicionController extends Controller
         $id = $pacienteCondicion->getKey();
         $idPaciente = $pacienteCondicion->id_paciente;
 
-        if (!$this->puedeVerPaciente($idPaciente)) {
-            return $this->prohibidoRedirigir('pacientes');
+        if (!$this->puedeModificarAntecedente($idPaciente, $pacienteCondicion->id_usuario_creacion)) {
+            return $this->prohibidoRedirigir(
+                'pacientes',
+                'Solo el médico que lo registró (con relación asistencial activa) puede quitar este antecedente.'
+            );
         }
 
         PacienteCondicion::eliminar($id);
+
+        AuditoriaExpediente::registrar(
+            $idPaciente,
+            AuditoriaExpediente::ELIMINACION,
+            'condicion_paciente',
+            $id
+        );
 
         Bitacora::registrar(
             Bitacora::ELIMINADO,

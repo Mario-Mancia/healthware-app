@@ -115,6 +115,38 @@ abstract class SolicitudConPaciente extends FormRequest
     }
 
     /**
+     * Indica si el usuario es el médico autor de un registro médico: leer un
+     * registro no autoriza a escribir en él (diagnósticos, recetas). Si el
+     * registro no existe devuelve true: la validación avisa que no existe.
+     */
+    protected function esAutorDelRegistro(?int $idRegistroMedico): bool
+    {
+        if (!$idRegistroMedico) {
+            return true;
+        }
+
+        $registro = RegistroMedico::withTrashed()->find($idRegistroMedico);
+
+        return $registro === null
+            || ($this->user()?->can('escribir', $registro) ?? false);
+    }
+
+    /**
+     * Indica si el usuario es el médico autor del registro de una receta.
+     */
+    protected function esAutorDeLaReceta(?int $idReceta): bool
+    {
+        if (!$idReceta) {
+            return true;
+        }
+
+        $receta = Receta::find($idReceta);
+
+        return $receta === null
+            || $this->esAutorDelRegistro($receta->id_registro_medico);
+    }
+
+    /**
      * Indica si el usuario puede trabajar con el paciente de una receta.
      */
     protected function puedeAccederALaReceta(?int $idReceta): bool

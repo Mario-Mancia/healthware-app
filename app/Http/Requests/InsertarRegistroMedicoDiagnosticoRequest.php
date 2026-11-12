@@ -8,7 +8,7 @@ class InsertarRegistroMedicoDiagnosticoRequest extends SolicitudConPaciente
 {
     public function authorize(): bool
     {
-        return $this->puedeAccederAlRegistro((int) $this->input('id_registro_medico'));
+        return $this->esAutorDelRegistro((int) $this->input('id_registro_medico'));
     }
 
     public function rules(): array

@@ -135,7 +135,7 @@ class DemoSeeder extends Seeder
             $fecha = now()->startOfDay()->addWeekdays(intdiv($indice, 6) + 1);
             $inicio = $fecha->copy()->setTime(8, 0)->addMinutes(30 * ($indice % 6));
 
-            Cita::create([
+            $cita = Cita::create([
                 'id_paciente' => $paciente->getKey(),
                 'id_doctor' => $medico->getKey(),
                 'fecha_cita' => $fecha->toDateString(),
@@ -144,6 +144,8 @@ class DemoSeeder extends Seeder
                 'estado' => 'programada',
                 'motivo' => 'Consulta de control',
             ]);
+
+            app(\App\Services\AccesoAsistencialService::class)->activarPorCita($cita);
         }
     }
 
@@ -170,6 +172,8 @@ class DemoSeeder extends Seeder
                 'motivo' => 'Consulta general',
             ]);
 
+            app(\App\Services\AccesoAsistencialService::class)->activarPorCita($cita);
+
             $registro = RegistroMedico::create([
                 'id_paciente' => $paciente->getKey(),
                 'id_doctor' => $medico->getKey(),
@@ -177,6 +181,7 @@ class DemoSeeder extends Seeder
                 'fecha_registro' => $inicio,
                 'motivo_consulta' => 'Consulta general',
                 'notas_clinicas' => 'Paciente estable, sin hallazgos relevantes.',
+                'id_usuario_creacion' => $medico->usuario_id,
             ]);
 
             $orden = Orden::insertar([

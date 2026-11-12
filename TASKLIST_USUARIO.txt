@@ -1,145 +1,77 @@
 HEALTHWARE · TAREAS DEL USUARIO POR FASE
 
-# [fase-01:inicio]
-FASE 1 · DATOS (migraciones, seeders, factories y modelos)
+# [fase-03c:inicio]
+FASE 3C · MEJORAS ASISTENCIALES (intermedia, antes de la fase 4)
 
-Tareas manuales (en el equipo donde tengas PHP, por ejemplo tu Windows):
-  [ ] 1. Subir los cambios al repositorio y traerlos donde vayas a ejecutar artisan.
-  [ ] 2. Revisar .env: DB_CONNECTION=mysql, DB_DATABASE, DB_USERNAME y DB_PASSWORD.
-         Como ya no existen las tablas sessions, cache ni jobs, debe decir:
-           SESSION_DRIVER=file
-           CACHE_STORE=file
-           QUEUE_CONNECTION=sync
-  [ ] 3. Crear la base de datos si no existe:
-         CREATE DATABASE healthware CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-  [ ] 4. Ejecutar:  php artisan migrate:fresh --seed
-         (crea 30 tablas del sistema, la vista vista_usuarios_por_estado y los datos iniciales).
-  [ ] 5. Revisar en MySQL que existan las tablas ordenes, detalle_ordenes, pagos y tarjetas_prueba.
-  [ ] 6. Opcional en .env (si no se definen, se usan los valores por defecto):
-           ADMIN_CORREO=admin@healthware.com
-           ADMIN_CONTRASENHA=HealthWare#2026
-           DEMO_CONTRASENHA=Demo#2026
+Comandos que debe ejecutar usted (en el equipo donde tenga PHP):
+  [ ] 1. php artisan migrate
+         (8 migraciones nuevas. Generan solas las relaciones asistenciales de las
+          citas y atenciones que ya existían y atribuyen los registros clínicos
+          antiguos al usuario de su médico. Alternativa con datos de demostración:
+          php artisan migrate:fresh --seed)
+  [ ] 2. php artisan optimize:clear
+  [ ] 3. php artisan route:list --name=referencias   (y relaciones, accesos, tareas)
+  [ ] 4. php artisan event:list                       (deben verse los 7 eventos con su listener)
+  [ ] 5. php artisan schedule:list                    (tareas:recordatorios y referencias:vencer)
+  [ ] 6. En desarrollo, dejar corriendo:  php artisan schedule:work
+         (prueba manual de una sola pasada:  php artisan tareas:recordatorios)
 
-Datos que crea el seeder:
-  - Administrador inicial: admin@healthware.com (debe cambiar la contraseña al entrar).
-  - Solo en APP_ENV=local, usuarios de demostración con la contraseña DEMO_CONTRASENHA:
-      medico@healthware.com, recepcion@healthware.com, contador@healthware.com
-    más 25 pacientes, citas, atenciones, órdenes y facturas.
-  - Tarjetas de prueba (todas ficticias; CVV y vencimiento en la tabla tarjetas_prueba):
-      4111111111111111  débito, aprobada (saldo 5000)
-      5555555555554444  crédito, aprobada (límite 3000)
-      4012888888881881  débito, fondos insuficientes (saldo 5)
-      5105105105105100  crédito, bloqueada
-      4222222222222     crédito, vencida
+Pruebas sugeridas (con los usuarios de la fase 1; use varios médicos si crea más):
+  [ ] A. Recepcionista programa una cita para el médico demo: aparece la relación
+         asistencial (menú Atención > Relaciones asistenciales) y el médico recibe
+         una notificación de cita asignada.
+  [ ] B. Médico A refiere un paciente a la especialidad X (o a un médico B): la
+         referencia queda "pendiente" y recepción recibe una notificación.
+  [ ] C. Recepción programa la referencia: se crea UNA cita vinculada, la referencia
+         pasa a "programada", el médico B obtiene relación asistencial y una
+         notificación. Intentar programarla otra vez falla.
+  [ ] D. El médico B abre el expediente, registra una atención con esa cita: la cita
+         pasa a "completada", la referencia a "atendida" y el médico A recibe un
+         aviso. El médico A vuelve a abrir el expediente y ve lo registrado por B.
+  [ ] E. El médico B cierra su relación (con motivo): pierde el acceso ordinario.
+  [ ] F. Un médico sin relación abre un expediente ajeno: se le pide justificación
+         (acceso excepcional, 4 h, solo lectura); los administradores reciben una
+         alerta; Auditoría de expedientes lo muestra; el administrador lo revisa.
+  [ ] G. El administrador intenta abrir un expediente: también debe solicitar acceso
+         excepcional. Sin él, los registros y recetas se muestran sin texto clínico.
+  [ ] H. Mis tareas: crear una con recordatorio dentro de 2 minutos; con
+         schedule:work llega UNA sola notificación; completarla evita avisos
+         futuros; reprogramarla vuelve a habilitar el aviso; otro usuario no
+         puede abrirla (403).
+  [ ] I. Cancelar la cita de una referencia: la referencia vuelve a "pendiente"
+         (puede reprogramarse) y el médico recibe un aviso de cancelación.
 
-Valores que puedes ajustar:
-  - Factura::TASA_IMPUESTO (app/Models/Factura.php): 0.13 = 13 % de impuesto. Ponla en 0 si no aplica.
-  - Precios de los servicios: database/seeders/ServicioSeeder.php (campo precio).
-  - Si no quieres papelera de datos clínicos: quita SoftDeletes de Paciente y RegistroMedico
-    y las líneas softDeletes() de las migraciones de pacientes y registros_medicos.
+Decisiones que se asumieron (dígame si quiere cambiar alguna):
+  - Relación: una cita ordinaria crea la del médico ("principal" si el paciente no
+    tiene otra principal activa; "seguimiento" si ya la tiene). Una cita de
+    referencia crea una "referencia". Se activa al programar la cita (en este
+    sistema programar = confirmar). Si hay una relación activa o suspendida con el
+    mismo médico se reutiliza; si estaba cerrada, se abre un episodio nuevo.
+  - El cierre es explícito (médico o administrador, con motivo). Solo se revoca
+    sola cuando la cita se cancela antes de que el médico atienda al paciente.
+  - Escribir (registros, diagnósticos, recetas, antecedentes, referencias) exige
+    relación activa; el acceso excepcional es solo lectura. Los diagnósticos y las
+    recetas de un registro solo los modifica el médico autor de ese registro.
+  - Administrador: gestiona relaciones, referencias y accesos, pero el expediente
+    clínico solo con acceso excepcional justificado. Recepción y contador nunca.
+  - Referencias: recepción y administrador no ven el resumen clínico ni los estudios.
+    Vencen a los 30 días (normal), 15 (prioritaria) y 7 (urgente) si siguen pendientes.
+  - Si la cita de una referencia se cancela (o el paciente no asiste), la referencia
+    vuelve a "pendiente" y la cita pierde el vínculo (la restricción única exige un
+    solo vínculo por referencia).
+  - Una atención registrada con cita completa la cita (y la referencia asociada).
+  - La consulta del expediente se audita en auditoria_expedientes y ya no en la
+    bitácora general; la bitácora conserva autenticación y administración.
+  - Se agregó una quinta tabla: accesos_excepcionales (el acceso de emergencia
+    necesita vigencia y revisión posterior).
+  - Las policies cubren solo el expediente clínico (PacientePolicy,
+    RegistroMedicoPolicy); referencias, tareas y el resto siguen con middleware de
+    rol y consultas Eloquent (las tareas son privadas por consulta y por 403).
 
-Decisiones pendientes (si no responde, se asume lo indicado):
-  - Quién crea la orden de servicios: médico y recepcionista.
-  - Pagos: se paga completo en una sola operación (efectivo o tarjeta de prueba).
-  - Administrador: supervisa la facturación (consulta y anula), no emite ni cobra.
-  - Formato del DUI: 00000000-0 (se validará en la fase de FormRequests).
-
-Siguiente: fase 2 (middlewares, seguridad y FormRequests).
-# [fase-01:fin]
-
-# [fase-02:inicio]
-FASE 2 · FLUJO DE DATOS (middlewares, requests, controladores y rutas)
-
-Tareas manuales (en el equipo donde tengas PHP):
-  [ ] 1. Subir los cambios y ejecutar:  php artisan route:list
-         Debe listar todas las rutas sin errores (si algo falla, pega el mensaje).
-  [ ] 2. Ejecutar:  php artisan storage:link
-         (las fotos de perfil se guardan en storage/app/public/media/usuarios).
-  [ ] 3. Si cambiaste .env o config:  php artisan config:clear
-  [ ] 4. Probar el login con cada rol (ver fase 1) y comprobar que:
-           - el administrador entra al dashboard, el contador a facturas y
-             médico y recepcionista a citas;
-           - el administrador inicial debe cambiar su contraseña al entrar.
-
-Cómo trabajan los formularios (para la fase de vistas):
-  - Pacientes por DUI: el input se llama dui_paciente. Al escribirlo, la vista
-    consulta GET pacientes/dui/{dui} (ruta pacientes.dui) y muestra debajo
-    "nombre_completo". Un médico solo encuentra a los pacientes que atiende.
-  - Usuario nuevo con rol Médico: además de los campos del usuario se envían
-    los datos del doctor en el arreglo "doctor" (doctor[especialidad_id],
-    doctor[dui], doctor[numero_licencia], doctor[fecha_nacimiento],
-    doctor[sexo], doctor[descripcion_profesional]). Todo se guarda en una
-    sola transacción.
-  - Orden de servicios: dui_paciente, id_registro_medico y id_cita
-    (opcionales), notas y detalles[N][id_servicio] y detalles[N][cantidad].
-    El precio sale del catálogo de servicios.
-  - Facturar: POST facturas con id_orden (y descuento o notas opcionales).
-  - Cobrar: POST pagos con id_factura, metodo_pago (efectivo o tarjeta), monto y,
-    según el método, monto_recibido o numero_tarjeta, mes_vencimiento,
-    anio_vencimiento, cvv y tipo_tarjeta.
-  - Foto de perfil: POST perfil/foto con el archivo "foto".
-
-Vistas que las rutas esperan (las crea la fase de vistas):
-  perfil.index, perfil.contrasenha, ordenes.index, pagos.index, facturacion.index,
-  facturacion.detalle, pacientes.papelera, registros_medicos.papelera,
-  pacientes.perfil, pacientes.expediente, doctores.perfil y citas.detalle.
-  Las demás vistas conservan los nombres del proyecto actual.
-
-Cambios respecto al proyecto actual:
-  - medicamentos usa la ruta y el nombre "medicamentos" (antes "medicamentos.css").
-  - Los doctores ya no se crean por separado: se crean con su usuario.
-  - Se quitaron las rutas de índice de pacientes_alergias, pacientes_condiciones,
-    registro_medico_diagnosticos y detalle_recetas (no tenían vista): ahora se
-    gestionan desde el expediente del paciente y las recetas.
-  - Las facturas las emite el contador; ya no existen facturas.insertar ni
-    detalle_facturas.* (el detalle se copia de la orden).
-  - Los catálogos (roles, estados, tipos sanguíneos, etc.) ya tienen
-    FormRequests y validan unicidad; los roles y estados base no se pueden
-    renombrar ni eliminar.
-  - La foto de perfil se valida (JPG, PNG o WEBP, hasta 2 MB) pero no se
-    re-procesa; Laravel genera el nombre del archivo.
-
-Decisiones pendientes (si no responde, se asume lo indicado):
-  - Dashboard por rol: se hace en su propia fase; por ahora solo el
-    administrador recibe el resumen de usuarios por estado.
-  - Correos (usuario nuevo, acciones importantes): fase siguiente.
-  - Exportaciones (PDF con el navegador y CSV): fase siguiente.
-
-Siguiente: fase de vistas y de correos.
-# [fase-02:fin]
-
-# [fase-03b:inicio]
-FASE 3B · VISTAS CLÍNICAS Y DE FACTURACIÓN
-
-Tareas manuales (en el equipo donde tengas PHP):
-  [ ] 1. Volver a ejecutar, en este orden, si no lo hiciste ya con la versión nueva:
-           fase-01-datos.sh · fase-02-flujo.sh · fase-03a-vistas-base.sh
-         Después:  php artisan view:clear
-  [ ] 2. Probar con cada rol (datos de la fase 1):
-           Recepcionista: crear un paciente, agendar una cita escribiendo el DUI
-             (debajo del campo debe aparecer el nombre), crear una orden con servicios.
-           Médico: ver solo a sus pacientes; abrir un expediente; registrar una
-             atención (formulario "Registrar atención", escribe el DUI, elige la cita);
-             agregar alergia, condición y diagnóstico; crear una receta con varios
-             medicamentos; crear una orden.
-           Contador: facturar una orden pendiente (descuento opcional), cobrar en
-             efectivo (cambio) y con tarjeta de prueba (la tabla de tarjetas aparece
-             en el modal solo con APP_ENV=local); probar una tarjeta rechazada.
-           Administrador: ver todo, anular una factura pendiente, ver y restaurar
-             desde las papeleras, consultar la bitácora.
-  [ ] 3. Imprimir una factura (Imprimir o guardar PDF): el navegador la guarda como PDF.
-  [ ] 4. Revisar el IVA (13 %) en app/Models/Factura.php (TASA_IMPUESTO).
-
-Detalles de diseño:
-  - Todo paciente se identifica por su DUI (00000000-0). Un médico solo encuentra
-    a los pacientes que atiende.
-  - Las pantallas de "Registrar atención", "Nueva receta" y "Nueva orden" aceptan
-    ?dui=00000000-0 en la dirección y abren su formulario con el DUI escrito
-    (lo usan los botones del expediente, del perfil y del detalle de la cita).
-  - Las facturas se emiten desde una orden pendiente: el precio sale del catálogo
-    de servicios (columna precio) y el contador solo agrega descuento y notas.
-  - El pago es único y completo; con tarjeta solo se guardan los últimos 4 dígitos.
-  - El dashboard por rol, los correos, las exportaciones (CSV) y la experiencia de
-    usuario final son fases siguientes.
-# [fase-03b:fin]
+Pendiente o fuera de esta fase:
+  - Edición de un registro médico ya guardado (hoy solo se crean y eliminan;
+    la auditoría ya tiene el tipo "modificacion").
+  - El tipo de auditoría "descarga" queda reservado para las exportaciones.
+  - Pruebas automatizadas: según su regla, no se generan.
+# [fase-03c:fin]
 

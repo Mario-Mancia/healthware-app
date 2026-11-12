@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\InsertarDetalleRecetaRequest;
+use App\Events\RegistroClinicoActualizado;
+use App\Models\AuditoriaExpediente;
 use App\Models\Bitacora;
 use App\Models\DetalleReceta;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +21,24 @@ class DetalleRecetaController extends Controller
         $detalleReceta = DetalleReceta::insertar(
             $request->validated()
         );
+
+        $detalleReceta->loadMissing('receta.registroMedico');
+        $idPacienteDetalle = (int) $detalleReceta->receta?->registroMedico?->id_paciente;
+
+        AuditoriaExpediente::registrar(
+            $idPacienteDetalle,
+            AuditoriaExpediente::MODIFICACION,
+            'detalle_receta',
+            $detalleReceta->getKey(),
+            null,
+            ['accion' => 'medicamento_agregado', 'receta' => $detalleReceta->id_receta]
+        );
+
+        event(new RegistroClinicoActualizado(
+            $idPacienteDetalle,
+            (int) $this->doctorActual()?->getKey(),
+            'detalle_receta'
+        ));
 
         Bitacora::registrar(
             Bitacora::CREADO,
@@ -45,7 +65,7 @@ class DetalleRecetaController extends Controller
 
         if (
             !$detalleReceta ||
-            !$this->puedeVerPaciente($detalleReceta->receta?->registroMedico?->id_paciente)
+            !$this->puedeConsultarExpediente($detalleReceta->receta?->registroMedico?->id_paciente)
         ) {
             return response()->json([
                 'mensaje' => 'El detalle de la receta no existe.',

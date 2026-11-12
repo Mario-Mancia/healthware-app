@@ -214,3 +214,44 @@
     .hw-dui-resultado,
     .fac-tarjetas-prueba { display: none !important; }
 }
+
+/* ----- Mis tareas (workspace personal) ----- */
+.tarea-card {
+    margin-bottom: 0.75rem;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-left: 4px solid var(--md-sys-color-primary);
+    border-radius: var(--md-sys-shape-lg);
+}
+
+.tarea-card.is-vencida { border-left-color: var(--md-sys-color-error); }
+.tarea-card.is-completada { border-left-color: var(--md-sys-color-outline); opacity: 0.8; }
+.tarea-card.is-cancelada { border-left-color: var(--md-sys-color-outline-variant); opacity: 0.65; }
+.tarea-card.is-completada .tarea-cabecera h3 { text-decoration: line-through; }
+
+.tarea-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.tarea-cabecera h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+.tarea-etiquetas { display: flex; align-items: center; gap: 0.4rem; }
+.tarea-descripcion { margin: 0.4rem 0 0; color: var(--md-sys-color-on-surface-variant); font-size: 0.88rem; white-space: pre-line; }
+
+.tarea-fechas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.1rem;
+    margin-top: 0.5rem;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.8rem;
+}
+
+.tarea-fechas span { display: inline-flex; align-items: center; gap: 0.25rem; }
+.tarea-fechas .material-symbols-outlined { font-size: 1rem; }
+
+.tarea-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.7rem; }
+.tarea-acciones form { display: inline; }

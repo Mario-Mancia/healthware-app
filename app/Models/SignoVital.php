@@ -8,11 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SignoVital extends Model
 {
+    use \App\Models\Concerns\RegistraAutoria;
+
     use HasFactory;
 
     protected $table = 'signos_vitales';
 
     protected $fillable = [
+        'id_usuario_creacion',
         'id_registro_medico',
         'peso',
         'altura',

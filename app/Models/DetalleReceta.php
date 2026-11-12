@@ -10,12 +10,15 @@ use Illuminate\Support\Facades\Validator;
 
 class DetalleReceta extends Model
 {
+    use \App\Models\Concerns\RegistraAutoria;
+
     use HasFactory;
 
     protected $table = 'detalle_recetas';
 
 
     protected $fillable = [
+        'id_usuario_creacion',
         'id_receta',
         'id_medicamento',
         'dosis',

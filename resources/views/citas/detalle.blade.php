@@ -72,5 +72,30 @@
                 <div class="hw-detail-item is-wide"><dt>Notas</dt><dd>{{ $cita->notas ?: '—' }}</dd></div>
             </dl>
         </section>
+
+        @if($cita->referenciaMedica)
+            @php
+                $referenciaCita = $cita->referenciaMedica;
+                $esMedicoDestino = auth()->id() === ($cita->doctor?->usuario_id);
+            @endphp
+            <section class="hw-surface">
+                <div class="hw-surface-header">
+                    <div>
+                        <h2 class="hw-surface-title">Origen: referencia médica {{ $referenciaCita->numero_referencia }}</h2>
+                        <p class="hw-surface-description">Esta cita se programó a partir de una referencia.</p>
+                    </div>
+                    <a href="{{ route('referencias') }}" class="btn btn-tonal">Ver referencias</a>
+                </div>
+                <dl class="hw-detail-grid" style="padding: 0 1.25rem 1.25rem;">
+                    <div class="hw-detail-item"><dt>Referido por</dt><dd>{{ trim(($referenciaCita->doctorOrigen?->usuario?->nombres ?? '') . ' ' . ($referenciaCita->doctorOrigen?->usuario?->apellidos ?? '')) ?: '—' }}</dd></div>
+                    <div class="hw-detail-item"><dt>Prioridad</dt><dd>{{ ucfirst($referenciaCita->prioridad) }}</dd></div>
+                    <div class="hw-detail-item is-wide"><dt>Motivo</dt><dd>{{ $referenciaCita->motivo }}</dd></div>
+                    @if($esMedicoDestino)
+                        <div class="hw-detail-item is-wide"><dt>Resumen clínico</dt><dd>{{ $referenciaCita->resumen_clinico ?: '—' }}</dd></div>
+                        <div class="hw-detail-item is-wide"><dt>Estudios solicitados</dt><dd>{{ $referenciaCita->estudios_solicitados ?: '—' }}</dd></div>
+                    @endif
+                </dl>
+            </section>
+        @endif
     </div>
 @endsection

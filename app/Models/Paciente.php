@@ -285,22 +285,23 @@ class Paciente extends Model
     }
 
     /**
-     * Indica si un médico atiende a un paciente: tiene con él una cita que
-     * no fue cancelada ni perdida, o ya le registró una atención.
+     * Relaciones asistenciales del paciente (historial de quién lo atendió).
+     */
+    public function relacionesAsistenciales(): HasMany
+    {
+        return $this->hasMany(RelacionAsistencial::class, 'id_paciente');
+    }
+
+    /**
+     * Indica si un médico atiende a un paciente: tiene con él una relación
+     * asistencial activa (ver AccesoAsistencialService). Las relaciones se
+     * crean al programar una cita o una referencia y se cierran de forma
+     * explícita; una cita cancelada o terminada no las elimina.
      */
     public static function atendidoPor(int $idPaciente, int $idDoctor): bool
     {
-        $conCita = Cita::query()
-            ->where('id_paciente', $idPaciente)
-            ->where('id_doctor', $idDoctor)
-            ->whereNotIn('estado', ['cancelada', 'no_asistio'])
-            ->exists();
-
-        if ($conCita) {
-            return true;
-        }
-
-        return RegistroMedico::query()
+        return RelacionAsistencial::query()
+            ->activas()
             ->where('id_paciente', $idPaciente)
             ->where('id_doctor', $idDoctor)
             ->exists();
@@ -311,17 +312,10 @@ class Paciente extends Model
      */
     public static function idsAtendidosPor(int $idDoctor): array
     {
-        $conCita = Cita::query()
+        return RelacionAsistencial::query()
+            ->activas()
             ->where('id_doctor', $idDoctor)
-            ->whereNotIn('estado', ['cancelada', 'no_asistio'])
-            ->pluck('id_paciente');
-
-        $conRegistro = RegistroMedico::query()
-            ->where('id_doctor', $idDoctor)
-            ->pluck('id_paciente');
-
-        return $conCita
-            ->merge($conRegistro)
+            ->pluck('id_paciente')
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values()
@@ -334,22 +328,13 @@ class Paciente extends Model
     public static function mostrarTodosDeDoctor(int $idDoctor): Collection
     {
         return static::with('tipoSanguineo')
-            ->where(function ($consulta) use ($idDoctor) {
-                $consulta
-                    ->whereIn(
-                        'id',
-                        Cita::query()
-                            ->select('id_paciente')
-                            ->where('id_doctor', $idDoctor)
-                            ->whereNotIn('estado', ['cancelada', 'no_asistio'])
-                    )
-                    ->orWhereIn(
-                        'id',
-                        RegistroMedico::query()
-                            ->select('id_paciente')
-                            ->where('id_doctor', $idDoctor)
-                    );
-            })
+            ->whereIn(
+                'id',
+                RelacionAsistencial::query()
+                    ->activas()
+                    ->select('id_paciente')
+                    ->where('id_doctor', $idDoctor)
+            )
             ->orderBy('apellidos')
             ->orderBy('nombres')
             ->get();

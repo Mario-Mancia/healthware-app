@@ -16,11 +16,14 @@ use Illuminate\Support\Facades\Validator;
  * */
 class PacienteAlergia extends Model
 {
+    use \App\Models\Concerns\RegistraAutoria;
+
     use HasFactory;
 
     protected $table = 'pacientes_alergias';
 
     protected $fillable = [
+        'id_usuario_creacion',
         'id_paciente',
         'id_alergia',
         'gravedad',

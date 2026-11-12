@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\InsertarRegistroMedicoRequest;
+use App\Events\RegistroClinicoActualizado;
+use App\Models\AuditoriaExpediente;
 use App\Models\Bitacora;
-use App\Models\Cita;
 use App\Models\RegistroMedico;
+use App\Services\CitaService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -19,9 +22,13 @@ class RegistroMedicoController extends Controller
     public function index(): View
     {
         return view('registros_medicos.index', [
-            'registrosMedicos' => $this->filtrarPorPaciente(
-                RegistroMedico::mostrarTodos(),
-                fn ($registro) => $registro->id_paciente
+            'registrosMedicos' => $this->ocultarClinicoSinAcceso(
+                $this->filtrarPorPaciente(
+                    RegistroMedico::mostrarTodos(),
+                    fn ($registro) => $registro->id_paciente
+                ),
+                fn ($registro) => $registro->id_paciente,
+                ['motivo_consulta', 'notas_clinicas', 'observaciones']
             ),
         ]);
     }
@@ -33,15 +40,34 @@ class RegistroMedicoController extends Controller
     public function insertarRegistroMedico(
         InsertarRegistroMedicoRequest $request
     ): RedirectResponse {
-        $registroMedico = RegistroMedico::insertar(
-            $request->validated()
-        );
+        // Todo en una transacción: el registro, la cita completada (y la
+        // referencia atendida, si la cita venía de una), la auditoría y el
+        // aviso a los demás médicos autorizados, que se envía al confirmar.
+        $registroMedico = DB::transaction(function () use ($request) {
+            $registro = RegistroMedico::insertar($request->validated());
 
-        if ($registroMedico->id_cita) {
-            Cita::where('id', $registroMedico->id_cita)
-                ->where('estado', 'programada')
-                ->update(['estado' => 'completada']);
-        }
+            if ($registro->id_cita) {
+                app(CitaService::class)->completarPorAtencion($registro->id_cita);
+            }
+
+            AuditoriaExpediente::registrar(
+                $registro->id_paciente,
+                AuditoriaExpediente::CREACION,
+                'registro_medico',
+                $registro->getKey(),
+                null,
+                ['cita' => $registro->id_cita],
+                $registro->id_doctor
+            );
+
+            event(new RegistroClinicoActualizado(
+                $registro->id_paciente,
+                $registro->id_doctor,
+                'registro_medico'
+            ));
+
+            return $registro;
+        });
 
         Bitacora::registrar(
             Bitacora::CREADO,
@@ -70,13 +96,23 @@ class RegistroMedicoController extends Controller
 
         if (
             !$registroMedico ||
-            !$this->puedeVerPaciente($registroMedico->id_paciente)
+            !$this->puedeConsultarExpediente($registroMedico->id_paciente)
         ) {
             return response()->json([
                 'success' => false,
                 'message' => 'No se encontró el registro médico solicitado.',
             ], 404);
         }
+
+        AuditoriaExpediente::registrar(
+            $registroMedico->id_paciente,
+            AuditoriaExpediente::CONSULTA,
+            'registro_medico',
+            $registroMedico->getKey(),
+            null,
+            [],
+            $registroMedico->id_doctor
+        );
 
         // Se devuelve el modelo tal cual (lo que esperan los scripts de la vista).
         return response()->json($registroMedico);
@@ -93,6 +129,16 @@ class RegistroMedicoController extends Controller
         $idDoctor = $registroMedico->id_doctor;
 
         if (RegistroMedico::eliminar($id)) {
+            AuditoriaExpediente::registrar(
+                $idPaciente,
+                AuditoriaExpediente::ELIMINACION,
+                'registro_medico',
+                $id,
+                null,
+                [],
+                $idDoctor
+            );
+
             Bitacora::registrar(
                 Bitacora::ELIMINADO,
                 'REGISTROS_MEDICOS',
@@ -133,7 +179,18 @@ class RegistroMedicoController extends Controller
      */
     public function restaurarRegistroMedico(int $id): RedirectResponse
     {
+        $idPaciente = RegistroMedico::withTrashed()->whereKey($id)->value('id_paciente');
+
         if (RegistroMedico::restaurar($id)) {
+            if ($idPaciente) {
+                AuditoriaExpediente::registrar(
+                    (int) $idPaciente,
+                    AuditoriaExpediente::RESTAURACION,
+                    'registro_medico',
+                    $id
+                );
+            }
+
             Bitacora::registrar(
                 Bitacora::ACTUALIZADO,
                 'REGISTROS_MEDICOS',

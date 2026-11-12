@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccesoExcepcional;
 use App\Models\Doctor;
 use App\Models\Paciente;
 use App\Models\Usuario;
@@ -97,6 +98,75 @@ abstract class Controller
         return $coleccion
             ->filter(fn ($elemento) => in_array((int) $idPaciente($elemento), $permitidos, true))
             ->values();
+    }
+
+    /**
+     * ¿Puede el usuario consultar el expediente clínico de un paciente?
+     * Lo decide PacientePolicy::viewExpediente: relación asistencial activa
+     * o acceso excepcional vigente. Un administrador sin acceso excepcional
+     * no puede consultar información clínica.
+     */
+    protected function puedeConsultarExpediente(?int $idPaciente): bool
+    {
+        if ($idPaciente === null) {
+            return false;
+        }
+
+        $usuario = $this->usuarioActual();
+        $paciente = Paciente::withTrashed()->find($idPaciente);
+
+        return $usuario !== null
+            && $paciente !== null
+            && $usuario->can('viewExpediente', $paciente);
+    }
+
+    /**
+     * ¿Puede el usuario modificar o quitar un antecedente (alergia o
+     * condición)? Requiere relación asistencial activa y haberlo registrado
+     * él mismo (o que no tenga autor registrado por ser anterior).
+     */
+    protected function puedeModificarAntecedente(?int $idPaciente, ?int $idUsuarioCreacion): bool
+    {
+        $usuario = $this->usuarioActual();
+        $paciente = $idPaciente ? Paciente::withTrashed()->find($idPaciente) : null;
+
+        if (!$usuario || !$paciente || !$usuario->can('agregarAntecedente', $paciente)) {
+            return false;
+        }
+
+        return $idUsuarioCreacion === null
+            || (int) $idUsuarioCreacion === (int) $usuario->getKey();
+    }
+
+    /**
+     * En los listados, un administrador no ve el contenido clínico de los
+     * pacientes para los que no tiene un acceso excepcional vigente: esos
+     * atributos se muestran vacíos (no se guardan cambios).
+     *
+     * @param  array<int, string>  $atributos
+     */
+    protected function ocultarClinicoSinAcceso(Collection $coleccion, callable $idPaciente, array $atributos): Collection
+    {
+        if (!$this->esAdministrador()) {
+            return $coleccion;
+        }
+
+        $conAcceso = AccesoExcepcional::query()
+            ->vigentes()
+            ->where('id_usuario', $this->usuarioActual()->getKey())
+            ->pluck('id_paciente')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return $coleccion->each(function ($elemento) use ($idPaciente, $atributos, $conAcceso) {
+            if (in_array((int) $idPaciente($elemento), $conAcceso, true)) {
+                return;
+            }
+
+            foreach ($atributos as $atributo) {
+                $elemento->setAttribute($atributo, null);
+            }
+        });
     }
 
     /**

@@ -8,7 +8,7 @@ class InsertarDetalleRecetaRequest extends SolicitudConPaciente
 {
     public function authorize(): bool
     {
-        return $this->puedeAccederALaReceta((int) $this->input('id_receta'));
+        return $this->esAutorDeLaReceta((int) $this->input('id_receta'));
     }
 
     public function rules(): array

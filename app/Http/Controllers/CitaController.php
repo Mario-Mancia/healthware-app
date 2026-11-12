@@ -7,6 +7,7 @@ use App\Http\Requests\InsertarCitaRequest;
 use App\Models\Bitacora;
 use App\Models\Cita;
 use App\Models\Doctor;
+use App\Services\CitaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -54,7 +55,7 @@ class CitaController extends Controller
     public function insertarCita(
         InsertarCitaRequest $request
     ): RedirectResponse {
-        $cita = Cita::insertar($request->validated());
+        $cita = app(CitaService::class)->crear($request->validated());
 
         Bitacora::registrar(
             Bitacora::CREADO,
@@ -94,13 +95,17 @@ class CitaController extends Controller
         ActualizarCitaRequest $request,
         Cita $cita
     ): RedirectResponse {
-        $actualizada = Cita::actualizar(
-            $request->validated(),
-            $cita->getKey()
+        // El servicio actualiza la cita y sincroniza la relación asistencial
+        // y la referencia médica asociadas, todo en una transacción.
+        $citaActualizada = app(CitaService::class)->actualizar(
+            $cita,
+            $request->validated()
         );
 
+        $actualizada = $citaActualizada !== null;
+
         if ($actualizada) {
-            $cita->refresh();
+            $cita = $citaActualizada;
 
             Bitacora::registrar(
                 Bitacora::ACTUALIZADO,
@@ -129,7 +134,7 @@ class CitaController extends Controller
         $fecha = $cita->fecha_cita->format('Y-m-d');
         $hora = $cita->hora_inicio;
 
-        if (Cita::eliminar($id)) {
+        if (app(CitaService::class)->eliminar($cita)) {
             Bitacora::registrar(
                 Bitacora::ELIMINADO,
                 'CITAS',

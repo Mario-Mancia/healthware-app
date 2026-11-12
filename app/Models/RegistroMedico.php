@@ -16,11 +16,14 @@ use Illuminate\Support\Facades\DB;
 
 class RegistroMedico extends Model
 {
+    use \App\Models\Concerns\RegistraAutoria;
+
     use HasFactory, SoftDeletes;
 
     protected $table = 'registros_medicos';
 
     protected $fillable = [
+        'id_usuario_creacion',
         'id_paciente',
         'id_doctor',
         'id_cita',

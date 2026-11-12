@@ -29,6 +29,11 @@ use App\Http\Controllers\RolController;
 use App\Http\Controllers\ServicioController;
 use App\Http\Controllers\TipoSanguineoController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\AccesoExcepcionalController;
+use App\Http\Controllers\AuditoriaExpedienteController;
+use App\Http\Controllers\ReferenciaMedicaController;
+use App\Http\Controllers\RelacionAsistencialController;
+use App\Http\Controllers\TareaPersonalController;
 use Illuminate\Support\Facades\Route;
 
 // RUTAS DE AUTENTICACIÓN
@@ -310,6 +315,71 @@ Route::middleware(['auth', 'rol', 'no-cache'])->group(function () {
 
             Route::post('/facturas', [FacturaController::class, 'emitirFactura'])->name('facturas.emitir');
             Route::post('/pagos', [PagoController::class, 'insertarPago'])->name('pagos.insertar');
+
+        });
+
+
+        // =====================================================================
+        // REFERENCIAS MÉDICAS, RELACIONES ASISTENCIALES, ACCESO EXCEPCIONAL,
+        // AUDITORÍA DEL EXPEDIENTE Y TAREAS PERSONALES
+        // =====================================================================
+
+        // Referencias: consulta y gestión (cada rol ve lo suyo)
+        Route::middleware('rol:Administrador,Médico,Recepcionista')->group(function () {
+
+            Route::get('referencias', [ReferenciaMedicaController::class, 'index'])->name('referencias');
+            Route::put('referencias/{referencia}/rechazar', [ReferenciaMedicaController::class, 'rechazarReferencia'])->whereNumber('referencia')->name('referencias.rechazar');
+            Route::put('referencias/{referencia}/cancelar', [ReferenciaMedicaController::class, 'cancelarReferencia'])->whereNumber('referencia')->name('referencias.cancelar');
+
+        });
+
+        // Referencias: el médico las emite
+        Route::middleware('rol:Médico')->group(function () {
+
+            Route::post('referencias', [ReferenciaMedicaController::class, 'insertarReferencia'])->name('referencias.insertar');
+
+        });
+
+        // Referencias: recepción (y administrador) las programa
+        Route::middleware('rol:Administrador,Recepcionista')->group(function () {
+
+            Route::put('referencias/{referencia}/programar', [ReferenciaMedicaController::class, 'programarReferencia'])->whereNumber('referencia')->name('referencias.programar');
+
+        });
+
+        // Relaciones asistenciales y accesos excepcionales: médico y administrador
+        Route::middleware('rol:Administrador,Médico')->group(function () {
+
+            Route::get('relaciones-asistenciales', [RelacionAsistencialController::class, 'index'])->name('relaciones');
+            Route::put('relaciones-asistenciales/{relacion}/cerrar', [RelacionAsistencialController::class, 'cerrarRelacion'])->whereNumber('relacion')->name('relaciones.cerrar');
+
+            Route::get('accesos-excepcionales', [AccesoExcepcionalController::class, 'index'])->name('accesos_excepcionales');
+            Route::post('pacientes/{paciente}/acceso-excepcional', [AccesoExcepcionalController::class, 'solicitar'])->whereNumber('paciente')->name('pacientes.acceso_excepcional');
+
+        });
+
+        // Gestión de accesos y auditoría: solo administrador
+        Route::middleware('rol:Administrador')->group(function () {
+
+            Route::put('relaciones-asistenciales/{relacion}/revocar', [RelacionAsistencialController::class, 'revocarRelacion'])->whereNumber('relacion')->name('relaciones.revocar');
+            Route::put('relaciones-asistenciales/{relacion}/suspender', [RelacionAsistencialController::class, 'suspenderRelacion'])->whereNumber('relacion')->name('relaciones.suspender');
+            Route::put('relaciones-asistenciales/{relacion}/reactivar', [RelacionAsistencialController::class, 'reactivarRelacion'])->whereNumber('relacion')->name('relaciones.reactivar');
+
+            Route::put('accesos-excepcionales/{acceso}/revisar', [AccesoExcepcionalController::class, 'revisar'])->whereNumber('acceso')->name('accesos_excepcionales.revisar');
+            Route::put('accesos-excepcionales/{acceso}/revocar', [AccesoExcepcionalController::class, 'revocar'])->whereNumber('acceso')->name('accesos_excepcionales.revocar');
+
+            Route::get('auditoria-expedientes', [AuditoriaExpedienteController::class, 'index'])->name('auditoria_expedientes');
+
+        });
+
+        // Tareas personales: todos los usuarios, cada uno con las suyas
+        Route::middleware('rol:Administrador,Médico,Recepcionista,Contador')->group(function () {
+
+            Route::get('tareas', [TareaPersonalController::class, 'index'])->name('tareas');
+            Route::post('tareas', [TareaPersonalController::class, 'insertarTarea'])->name('tareas.insertar');
+            Route::put('tareas/{tarea}', [TareaPersonalController::class, 'actualizarTarea'])->whereNumber('tarea')->name('tareas.actualizar');
+            Route::put('tareas/{tarea}/estado', [TareaPersonalController::class, 'cambiarEstadoTarea'])->whereNumber('tarea')->name('tareas.estado');
+            Route::delete('tareas/{tarea}', [TareaPersonalController::class, 'eliminarTarea'])->whereNumber('tarea')->name('tareas.eliminar');
 
         });
 

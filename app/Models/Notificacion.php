@@ -16,6 +16,7 @@ class Notificacion extends Model
         'tipo',
         'titulo',
         'mensaje',
+        'enlace',
         'leido_en'
     ];
 
@@ -40,6 +41,7 @@ class Notificacion extends Model
             'tipo' => 'required|string|max:100',
             'titulo' => 'required|string|max:150',
             'mensaje' => 'required|string',
+            'enlace' => 'nullable|string|max:255',
             'leido_en' => 'nullable|date'
         ];
     }
@@ -50,6 +52,7 @@ class Notificacion extends Model
             'tipo' => 'sometimes|required|string|max:100',
             'titulo' => 'sometimes|required|string|max:150',
             'mensaje' => 'sometimes|required|string',
+            'enlace' => 'sometimes|nullable|string|max:255',
             'leido_en' => 'sometimes|nullable|date'
         ];
     }
@@ -61,6 +64,48 @@ class Notificacion extends Model
             : self::validaciones();
 
         return Validator::make($datos, $reglas)->validate();
+    }
+
+    // Avisos del sistema
+
+    /**
+     * Crea una notificación para un usuario (la usan los listeners de eventos).
+     */
+    public static function notificar(
+        int $idUsuario,
+        string $tipo,
+        string $titulo,
+        string $mensaje,
+        ?string $enlace = null
+    ): Notificacion {
+        return static::create([
+            'id_usuario' => $idUsuario,
+            'tipo' => $tipo,
+            'titulo' => mb_substr($titulo, 0, 150),
+            'mensaje' => $mensaje,
+            'enlace' => $enlace,
+        ]);
+    }
+
+    /**
+     * Notifica a todos los usuarios de un rol. Devuelve cuántos recibieron el aviso.
+     */
+    public static function notificarARol(
+        string $rol,
+        string $tipo,
+        string $titulo,
+        string $mensaje,
+        ?string $enlace = null
+    ): int {
+        $ids = Usuario::query()
+            ->whereHas('rol', fn ($consulta) => $consulta->where('rol', $rol))
+            ->pluck('id');
+
+        foreach ($ids as $idUsuario) {
+            static::notificar((int) $idUsuario, $tipo, $titulo, $mensaje, $enlace);
+        }
+
+        return $ids->count();
     }
 
     // Consultas

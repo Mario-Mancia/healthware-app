@@ -6,7 +6,9 @@ use App\Http\Requests\ActualizarPacienteRequest;
 use App\Http\Requests\InsertarPacienteRequest;
 use App\Models\Bitacora;
 use App\Models\Cita;
+use App\Models\AccesoExcepcional;
 use App\Models\Alergia;
+use App\Models\AuditoriaExpediente;
 use App\Models\CondicionMedica;
 use App\Models\Diagnostico;
 use App\Models\Paciente;
@@ -168,7 +170,19 @@ class PacienteController extends Controller
      */
     public function expediente(Paciente $paciente): View|RedirectResponse
     {
-        if (!$this->puedeVerPaciente($paciente->getKey())) {
+        $usuario = $this->usuarioActual();
+
+        // Sin relación asistencial activa ni acceso excepcional vigente, un
+        // médico o administrador puede solicitar acceso de emergencia.
+        if (!$usuario->can('viewExpediente', $paciente)) {
+            if ($usuario->can('solicitarAccesoExcepcional', $paciente)) {
+                return view('pacientes.acceso_excepcional', [
+                    'paciente' => $paciente,
+                    'horas' => AccesoExcepcional::HORAS_VIGENCIA,
+                    'minimo' => AccesoExcepcional::MOTIVO_MINIMO,
+                ]);
+            }
+
             return $this->prohibidoRedirigir(
                 'pacientes',
                 'No tiene permiso para consultar el expediente de este paciente.'
@@ -178,7 +192,9 @@ class PacienteController extends Controller
         $paciente->load([
             'tipoSanguineo',
             'alergias.alergia',
+            'alergias.creadoPor',
             'condiciones.condicionMedica',
+            'condiciones.creadoPor',
             'registrosMedicos' => fn ($consulta) => $consulta->orderByDesc('fecha_registro'),
             'registrosMedicos.doctor.usuario',
             'registrosMedicos.doctor.especialidad',
@@ -187,16 +203,12 @@ class PacienteController extends Controller
             'registrosMedicos.recetas.detalles.medicamento',
         ]);
 
-        Bitacora::registrar(
-            Bitacora::CONSULTADO,
-            'EXPEDIENTES',
+        // La consulta del expediente se audita en auditoria_expedientes.
+        AuditoriaExpediente::registrar(
             $paciente->getKey(),
-            'Consulta del expediente clínico. Identificación: '
-            . $paciente->numero_identificacion
-            . ', nombre: '
-            . $paciente->nombres
-            . ' '
-            . $paciente->apellidos
+            AuditoriaExpediente::CONSULTA,
+            'expediente',
+            $paciente->getKey()
         );
 
         return view('pacientes.expediente', [
@@ -204,7 +216,9 @@ class PacienteController extends Controller
             'alergias' => Alergia::mostrarTodos(),
             'condicionesMedicas' => CondicionMedica::mostrarTodos(),
             'diagnosticos' => Diagnostico::mostrarTodos(),
-            'puedeRegistrar' => $this->esMedico(),
+            'puedeRegistrar' => $usuario->can('registrarAtencion', $paciente),
+            'idDoctorActual' => $this->doctorActual()?->getKey(),
+            'accesoExcepcional' => AccesoExcepcional::vigenteDe($usuario->getKey(), $paciente->getKey()),
         ]);
     }
 

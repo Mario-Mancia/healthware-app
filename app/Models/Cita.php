@@ -19,6 +19,7 @@ class Cita extends Model
     protected $fillable = [
         'id_paciente',
         'id_doctor',
+        'id_referencia_medica',
         'fecha_cita',
         'hora_inicio',
         'hora_fin',
@@ -30,6 +31,7 @@ class Cita extends Model
     protected $casts = [
         'id_paciente' => 'integer',
         'id_doctor' => 'integer',
+        'id_referencia_medica' => 'integer',
         'fecha_cita' => 'date',
     ];
 
@@ -43,6 +45,14 @@ class Cita extends Model
     public function doctor(): BelongsTo
     {
         return $this->belongsTo(Doctor::class, 'id_doctor');
+    }
+
+    /**
+     * Referencia médica que originó la cita (si la hay).
+     */
+    public function referenciaMedica(): BelongsTo
+    {
+        return $this->belongsTo(ReferenciaMedica::class, 'id_referencia_medica');
     }
 
     // Reglas de validación
@@ -221,6 +231,8 @@ class Cita extends Model
             'paciente',
             'doctor.usuario',
             'doctor.especialidad',
+            'referenciaMedica.doctorOrigen.usuario',
+            'referenciaMedica.especialidadDestino',
         ])->find($id);
     }
 

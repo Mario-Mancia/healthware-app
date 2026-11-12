@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\InsertarPacienteAlergiaRequest;
+use App\Events\RegistroClinicoActualizado;
+use App\Models\AuditoriaExpediente;
 use App\Models\Bitacora;
 use App\Models\PacienteAlergia;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +22,19 @@ class PacienteAlergiaController extends Controller
         $pacienteAlergia = PacienteAlergia::insertar(
             $request->validated()
         );
+
+        AuditoriaExpediente::registrar(
+            $pacienteAlergia->id_paciente,
+            AuditoriaExpediente::CREACION,
+            'alergia_paciente',
+            $pacienteAlergia->getKey()
+        );
+
+        event(new RegistroClinicoActualizado(
+            $pacienteAlergia->id_paciente,
+            (int) $this->doctorActual()?->getKey(),
+            'alergia_paciente'
+        ));
 
         Bitacora::registrar(
             Bitacora::CREADO,
@@ -40,7 +55,7 @@ class PacienteAlergiaController extends Controller
 
         if (
             !$pacienteAlergia ||
-            !$this->puedeVerPaciente($pacienteAlergia->id_paciente)
+            !$this->puedeConsultarExpediente($pacienteAlergia->id_paciente)
         ) {
             return response()->json([
                 'mensaje' => 'El registro de alergia no existe.',
@@ -56,11 +71,21 @@ class PacienteAlergiaController extends Controller
         $id = $pacienteAlergia->getKey();
         $idPaciente = $pacienteAlergia->id_paciente;
 
-        if (!$this->puedeVerPaciente($idPaciente)) {
-            return $this->prohibidoRedirigir('pacientes');
+        if (!$this->puedeModificarAntecedente($idPaciente, $pacienteAlergia->id_usuario_creacion)) {
+            return $this->prohibidoRedirigir(
+                'pacientes',
+                'Solo el médico que lo registró (con relación asistencial activa) puede quitar este antecedente.'
+            );
         }
 
         PacienteAlergia::eliminar($id);
+
+        AuditoriaExpediente::registrar(
+            $idPaciente,
+            AuditoriaExpediente::ELIMINACION,
+            'alergia_paciente',
+            $id
+        );
 
         Bitacora::registrar(
             Bitacora::ELIMINADO,

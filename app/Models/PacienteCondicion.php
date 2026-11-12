@@ -17,11 +17,14 @@ use Illuminate\Support\Facades\Validator;
 
 class PacienteCondicion extends Model
 {
+    use \App\Models\Concerns\RegistraAutoria;
+
     use HasFactory;
 
     protected $table = 'pacientes_condiciones';
 
     protected $fillable = [
+        'id_usuario_creacion',
         'id_paciente',
         'id_condicion_medica',
         'fecha_diagnostico',
