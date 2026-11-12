@@ -1,0 +1,104 @@
+/* ============================================================
+   HEALTHWARE - VISTA: Mi perfil y cambio de contraseña
+   Archivo: public/css/perfil.css
+   Blade: resources/views/perfil/index.blade.php
+          resources/views/perfil/contrasenha.blade.php
+   ============================================================ */
+
+.perfil-tarjeta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.perfil-foto {
+    width: 128px;
+    height: 128px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    color: var(--md-sys-color-on-primary);
+    background: var(--md-sys-color-primary);
+    border-radius: 50%;
+    font-size: 2.5rem;
+    font-weight: 600;
+}
+
+.perfil-foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.perfil-nombre {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.perfil-correo {
+    margin: 0;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+}
+
+.perfil-formulario-foto {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: left;
+}
+
+.perfil-seccion {
+    padding: 1.25rem;
+}
+
+.perfil-seccion + .perfil-seccion {
+    margin-top: 1rem;
+}
+
+.perfil-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.perfil-requisitos {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.82rem;
+}
+
+.perfil-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    padding: 0.85rem 1rem;
+    color: var(--md-sys-color-on-primary-container);
+    background-color: var(--md-sys-color-primary-container);
+    border-radius: var(--md-sys-shape-md);
+    font-size: 0.9rem;
+}
+
+.perfil-campo-contrasenha {
+    position: relative;
+}
+
+.perfil-campo-contrasenha .form-control {
+    padding-right: 3rem;
+}
+
+.perfil-ver-contrasenha {
+    position: absolute;
+    top: 50%;
+    right: 0.5rem;
+    transform: translateY(-50%);
+}

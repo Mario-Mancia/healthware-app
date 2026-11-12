@@ -38,7 +38,10 @@ class UsuarioController extends Controller
     public function insertarUsuario(
         InsertarUsuarioRequest $request
     ): RedirectResponse | JsonResponse {
-        $usuario = Usuario::insertar($request->validated());
+        // La contraseña la define el administrador: el usuario debe cambiarla al entrar.
+        $usuario = Usuario::insertar(
+            $request->validated() + ['debe_cambiar_contrasenha' => true]
+        );
 
         Bitacora::registrar(
             Bitacora::CREADO,
@@ -89,6 +92,11 @@ class UsuarioController extends Controller
         Usuario $usuario
     ): RedirectResponse | JsonResponse {
         $datos = $request->validated();
+
+        // Si el administrador asigna una contraseña nueva, el usuario debe cambiarla al entrar.
+        if (!blank($datos['contrasenha'] ?? null)) {
+            $datos['debe_cambiar_contrasenha'] = true;
+        }
 
         $cambiaRolOEstado =
             (int) $datos['id_rol'] !== (int) $usuario->id_rol ||

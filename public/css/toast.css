@@ -1,0 +1,206 @@
+/*
+|--------------------------------------------------------------------------
+| HEALTHWARE - MATERIAL DESIGN 3 TOAST
+|--------------------------------------------------------------------------
+*/
+
+.hw-toast-container {
+    z-index: 1090;
+    width: min(420px, calc(100vw - 2rem));
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    pointer-events: none;
+}
+
+.hw-toast {
+    --hw-toast-accent: var(--bs-primary);
+    --hw-toast-duration: 4500ms;
+
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    pointer-events: auto;
+
+    color: var(--bs-body-color);
+    background: var(--bs-body-bg);
+
+    border: 1px solid var(--bs-border-color);
+    border-radius: 16px;
+
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.08),
+        0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Variantes */
+
+.hw-toast--success {
+    --hw-toast-accent: #2e7d32;
+}
+
+.hw-toast--error {
+    --hw-toast-accent: #ba1a1a;
+}
+
+.hw-toast--warning {
+    --hw-toast-accent: #946000;
+}
+
+.hw-toast--info {
+    --hw-toast-accent: #0061a4;
+}
+
+/* Contenido */
+
+.hw-toast__content {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem;
+    min-height: 82px;
+}
+
+/* Icono */
+
+.hw-toast__icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+
+    border-radius: 14px;
+
+    color: var(--hw-toast-accent);
+    background: color-mix(
+        in srgb,
+        var(--hw-toast-accent) 13%,
+        var(--bs-body-bg)
+    );
+}
+
+.hw-toast__icon {
+    font-size: 23px;
+    line-height: 1;
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 500,
+        'GRAD' 0,
+        'opsz' 24;
+}
+
+/* Mensaje */
+
+.hw-toast__message {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.hw-toast__title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--bs-body-color);
+}
+
+.hw-toast__description {
+    font-size: 0.84rem;
+    font-weight: 400;
+    line-height: 1.45;
+
+    color: var(--bs-secondary-color);
+
+    overflow-wrap: anywhere;
+}
+
+/* Botón cerrar */
+
+.hw-toast__close {
+    flex: 0 0 auto;
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-left: 0.25rem;
+
+    opacity: 0.55;
+}
+
+.hw-toast__close:hover {
+    opacity: 1;
+}
+
+/* Barra de duración */
+
+.hw-toast__progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+
+    width: 100%;
+    height: 3px;
+
+    background: color-mix(
+        in srgb,
+        var(--hw-toast-accent) 12%,
+        transparent
+    );
+}
+
+.hw-toast__progress-bar {
+    width: 100%;
+    height: 100%;
+
+    background: var(--hw-toast-accent);
+    transform-origin: left;
+}
+
+.hw-toast.show .hw-toast__progress-bar {
+    animation: hw-toast-progress linear forwards;
+    animation-duration: var(--hw-toast-duration);
+}
+
+/* Pausar la barra al colocar el cursor sobre el toast */
+
+.hw-toast:hover .hw-toast__progress-bar {
+    animation-play-state: paused;
+}
+
+@keyframes hw-toast-progress {
+    from {
+        transform: scaleX(1);
+    }
+
+    to {
+        transform: scaleX(0);
+    }
+}
+
+/* Adaptación móvil */
+
+@media (max-width: 480px) {
+    .hw-toast-container {
+        right: 0;
+        bottom: 0;
+        left: 0;
+
+        width: 100%;
+        padding: 0.75rem;
+    }
+
+    .hw-toast__content {
+        padding: 0.875rem;
+    }
+}
+
+/* Accesibilidad */
+
+@media (prefers-reduced-motion: reduce) {
+    .hw-toast.show .hw-toast__progress-bar {
+        animation: none;
+    }
+}

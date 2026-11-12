@@ -28,6 +28,9 @@ class ActualizarDoctorRequest extends FormRequest
             $doctor->getKey()
         );
 
+        // La cuenta de usuario de un doctor no se reasigna desde aquí.
+        unset($reglas['usuario_id']);
+
         $reglas['dui'][] = 'regex:/^\d{8}-\d$/';
 
         return $reglas;

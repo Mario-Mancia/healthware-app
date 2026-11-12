@@ -1,0 +1,35 @@
+HEALTHWARE · TAREAS DEL USUARIO POR FASE
+
+# [fase-03a:inicio]
+FASE 3A · VISTAS BASE Y ADMINISTRACIÓN
+
+Tareas manuales (en el equipo donde tengas PHP):
+  [ ] 1. Copiar Bootstrap 5 a:
+         public/bootstrap/css/bootstrap.min.css
+         public/bootstrap/js/bootstrap.bundle.min.js
+  [ ] 2. Limpiar las vistas compiladas:  php artisan view:clear
+  [ ] 3. Probar con cada rol (ver fase 1) que el menú lateral muestra solo lo suyo:
+           administrador: todo · médico y recepcionista: su trabajo clínico ·
+           contador: órdenes, facturas, pagos, servicios, anuncios y notificaciones.
+  [ ] 4. Probar: crear un usuario con rol Médico (aparece la sección del doctor),
+         cambiar la foto de perfil (requiere php artisan storage:link) y la contraseña.
+  [ ] 5. Revisar que Bootstrap Icons NO se usa: los iconos son Material Symbols
+         (se cargan desde Google Fonts, requiere internet al abrir el sistema).
+
+Importante:
+  - Hasta la fase 3B no existen las pantallas de pacientes, citas, expedientes,
+    recetas, órdenes, facturas, pagos y las papeleras. El menú ya muestra esos
+    enlaces; abrirlos dará error de vista no encontrada hasta entonces.
+  - El dashboard todavía es el de demostración del proyecto actual (datos fijos);
+    el dashboard real por rol es una fase propia.
+
+Cambios respecto al proyecto actual:
+  - Servicios tiene precio; doctores no se crean aparte; medicamentos usa
+    "medicamentos" en lugar de "medicamentos.css"; notificaciones permite marcar
+    como leída; el avatar muestra la foto de perfil.
+  - Un usuario creado por el administrador (o con contraseña restablecida por él)
+    debe cambiar su contraseña al entrar.
+
+Siguiente: fase 3B (pacientes, citas, expedientes, recetas, órdenes, facturas y pagos).
+# [fase-03a:fin]
+

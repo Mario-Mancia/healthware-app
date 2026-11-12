@@ -7,6 +7,7 @@ use App\Models\Bitacora;
 use App\Models\Doctor;
 use App\Models\Especialidad;
 use App\Models\HorarioDoctor;
+use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -18,6 +19,10 @@ class DoctorController extends Controller
         $datos = [
             'doctores' => Doctor::mostrarTodos(),
             'especialidades' => Especialidad::mostrarTodos(),
+            // Cuentas con rol Médico (la vista las muestra en el formulario de edición)
+            'usuarios' => Usuario::mostrarTodos()
+                ->filter(fn ($usuario) => $usuario->tieneRol(Usuario::ROL_MEDICO))
+                ->values(),
         ];
 
         return view('doctores.index', $datos);
