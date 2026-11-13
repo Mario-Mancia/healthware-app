@@ -137,39 +137,6 @@
                 <span class="material-symbols-outlined">home</span>
                 Inicio
             </a>
-
-            @if(\Illuminate\Support\Facades\Route::has('dashboard'))
-                <a href="{{ route('dashboard') }}"
-                   class="app-topnav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    Dashboard
-                </a>
-            @endif
-
-            @if(count($accesosRapidos))
-                <div class="dropdown">
-                    <button type="button"
-                            class="app-topnav-link dropdown-toggle"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false">
-                        <span class="material-symbols-outlined">bolt</span>
-                        Accesos rápidos
-                        <span class="material-symbols-outlined">expand_more</span>
-                    </button>
-
-                    <ul class="dropdown-menu">
-                        @foreach($accesosRapidos as $acceso)
-                            <li>
-                                <a class="dropdown-item" href="{{ route($acceso['ruta']) }}">
-                                    <span class="material-symbols-outlined">{{ $acceso['icono'] }}</span>
-                                    {{ $acceso['etiqueta'] }}
-                                </a>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
         </nav>
     </div>
 

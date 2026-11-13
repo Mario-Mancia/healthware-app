@@ -26,11 +26,11 @@ class UsuarioSeeder extends Seeder
             [
                 'id_rol' => Rol::where('rol', 'Administrador')->value('id'),
                 'id_estado' => Estado::where('estado', 'ACTIVO')->value('id'),
-                'nombres' => 'Administrador',
-                'apellidos' => 'del Sistema',
+                'nombres' => 'Mario',
+                'apellidos' => 'Mancía',
                 'contrasenha' => env('ADMIN_CONTRASENHA', 'HealthWare#2026'),
-                'telefono' => null,
-                'debe_cambiar_contrasenha' => true,
+                'telefono' => 12345678,
+                'debe_cambiar_contrasenha' => false,
             ]
         );
     }
