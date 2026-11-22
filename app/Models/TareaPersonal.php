@@ -27,6 +27,8 @@ use Illuminate\Validation\ValidationException;
  *    permanece al final del pizarrón durante unas horas de gracia (para poder
  *    reprogramarla) y después pasa a la papelera.
  *  - Una vez creada, solo se puede cambiar su fecha de vencimiento.
+ *  - Una tarea vencida no cambia de estado: solo se puede reprogramar (vuelve
+ *    a pendiente) o enviar a la papelera. No puede completarse ni cancelarse.
  *
  * "Vencida" no es un estado guardado: se calcula comparando la fecha de
  * vencimiento con la fecha actual.
@@ -405,7 +407,24 @@ class TareaPersonal extends Model
         $datos = static::reglasVencimiento($datos);
         $nuevo = Carbon::parse($datos['fecha_vencimiento']);
 
-        if (!$this->cambioFecha($this->fecha_vencimiento, $nuevo)) {
+        return DB::transaction(function () use ($nuevo) {
+            $this->bloquearYRefrescar();
+
+            if (!$this->estaAbierta()) {
+                throw ValidationException::withMessages([
+                    'fecha_vencimiento' => 'Solo se puede reprogramar una tarea abierta.',
+                ]);
+            }
+
+            return $this->aplicarVencimiento($nuevo);
+        });
+    }
+
+    private function aplicarVencimiento(Carbon $nuevo): bool
+    {
+        $estabaVencida = $this->estaVencida();
+
+        if (!$estabaVencida && !$this->cambioFecha($this->fecha_vencimiento, $nuevo)) {
             return true;
         }
 
@@ -413,6 +432,11 @@ class TareaPersonal extends Model
             'fecha_vencimiento' => $nuevo,
             'aviso_vencimiento_enviado_en' => null,
         ];
+
+        // Una tarea vencida que se reprograma vuelve a pendiente.
+        if ($estabaVencida) {
+            $cambios['estado'] = self::ESTADO_PENDIENTE;
+        }
 
         if ($this->fecha_recordatorio && $this->fecha_recordatorio->gt($nuevo)) {
             $cambios['fecha_recordatorio'] = null;
@@ -423,13 +447,14 @@ class TareaPersonal extends Model
             $cambios['fecha_inicio'] = null;
         }
 
-        return DB::transaction(function () use ($cambios) {
-            $actualizada = $this->update($cambios);
+        $actualizada = $this->update($cambios);
 
-            event(new TareaEstadoCambiado($this, TareaEstadoCambiado::REPROGRAMADA));
+        event(new TareaEstadoCambiado(
+            $this,
+            $estabaVencida ? TareaEstadoCambiado::REACTIVADA : TareaEstadoCambiado::REPROGRAMADA
+        ));
 
-            return $actualizada;
-        });
+        return $actualizada;
     }
 
     /**
@@ -438,11 +463,28 @@ class TareaPersonal extends Model
      */
     public function cambiarEstado(string $estado): bool
     {
-        if ($estado === $this->estado) {
-            return true;
-        }
-
         return DB::transaction(function () use ($estado) {
+            $this->bloquearYRefrescar();
+
+            if ($estado === $this->estado) {
+                return true;
+            }
+
+            if (!$this->estaAbierta()) {
+                throw ValidationException::withMessages([
+                    'estado' => 'Solo se puede cambiar el estado de una tarea abierta.',
+                ]);
+            }
+
+            // Una tarea vencida no puede iniciarse, pausarse, completarse ni
+            // cancelarse: solo reprogramarse o enviarse a la papelera.
+            if ($this->estaVencida()) {
+                throw ValidationException::withMessages([
+                    'estado' => 'La tarea "' . $this->titulo . '" está vencida: no puede cambiar de estado. '
+                        . 'Reprograme su vencimiento o envíela a la papelera.',
+                ]);
+            }
+
             $cierra = in_array($estado, [self::ESTADO_COMPLETADA, self::ESTADO_CANCELADA], true);
 
             $this->forceFill([
@@ -632,6 +674,24 @@ class TareaPersonal extends Model
                     . ' tareas. Envíe alguna a la papelera para poder agregar más.',
             ]);
         }
+    }
+
+    /**
+     * Bloquea la fila de la tarea y carga su estado más reciente, para que dos
+     * acciones simultáneas (por ejemplo, un doble clic) no se pisen. Debe
+     * llamarse dentro de una transacción.
+     */
+    private function bloquearYRefrescar(): void
+    {
+        $existe = static::query()->whereKey($this->getKey())->lockForUpdate()->exists();
+
+        if (!$existe) {
+            throw ValidationException::withMessages([
+                'estado' => 'La tarea ya no está en el pizarrón.',
+            ]);
+        }
+
+        $this->refresh();
     }
 
     private function cambioFecha($actual, $nueva): bool

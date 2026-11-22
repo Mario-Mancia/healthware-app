@@ -68,6 +68,10 @@ Route::middleware(['auth', 'rol', 'no-cache'])->group(function () {
         Route::get('/notificaciones/todos', [NotificacionController::class, 'mostrarTodos'])->name('notificaciones.todos');
         Route::get('/notificaciones/buscar/{id}', [NotificacionController::class, 'buscar'])->name('notificaciones.buscar');
         Route::put('/notificaciones/{id}/leer', [NotificacionController::class, 'leer'])->name('notificaciones.leer');
+        Route::get('/notificaciones/{id}/abrir', [NotificacionController::class, 'abrir'])->whereNumber('id')->name('notificaciones.abrir');
+        Route::put('/notificaciones/leer-todas', [NotificacionController::class, 'leerTodas'])->name('notificaciones.leer_todas');
+        Route::delete('/notificaciones/purgar', [NotificacionController::class, 'vaciar'])->name('notificaciones.vaciar');
+        Route::delete('/notificaciones/{id}', [NotificacionController::class, 'eliminar'])->whereNumber('id')->name('notificaciones.eliminar');
 
         // Anuncios globales: consulta
         Route::get('/anuncios-globales', [AnuncioGlobalController::class, 'index'])->name('anuncios_globales');
@@ -144,9 +148,6 @@ Route::middleware(['auth', 'rol', 'no-cache'])->group(function () {
             Route::post('/anuncios-globales/insertar', [AnuncioGlobalController::class, 'insertar'])->name('anuncios_globales.insertar');
             Route::put('/anuncios-globales/actualizar/{id}', [AnuncioGlobalController::class, 'actualizar'])->name('anuncios_globales.actualizar');
 
-            // Notificaciones: administración
-            Route::post('/notificaciones/insertar', [NotificacionController::class, 'insertar'])->name('notificaciones.insertar');
-            Route::put('/notificaciones/actualizar/{id}', [NotificacionController::class, 'actualizar'])->name('notificaciones.actualizar');
 
             // Papelera de datos clínicos
             Route::get('pacientes/papelera', [PacienteController::class, 'papelera'])->name('pacientes.papelera');

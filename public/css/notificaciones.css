@@ -1,0 +1,12 @@
+/* ============================================================
+   HEALTHWARE - ESTILOS DE LA VISTA: Notificaciones
+   Archivo: public/css/notificaciones.css
+   Blade: resources/views/notificaciones/index.blade.php
+   ============================================================ */
+
+/* Las notificaciones pendientes se distinguen sin llamar demasiado la atención */
+.hw-row-unread td { background-color: var(--md-sys-state-hover); }
+.hw-row-unread .hw-fullname { font-weight: 700; }
+.hw-row-unread .hw-avatar { color: var(--md-sys-color-on-primary-container); background-color: var(--md-sys-color-primary-container); }
+
+.hw-notif-vence { color: var(--md-sys-color-on-surface-variant); }

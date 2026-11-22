@@ -24,3 +24,7 @@ Homestead.yaml
 Thumbs.db
 /.respaldos-fases
 .backup-tareas/
+
+.backup-correccion-tareas/
+
+.backup-notificaciones/

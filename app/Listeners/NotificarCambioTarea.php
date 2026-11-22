@@ -58,6 +58,12 @@ class NotificarCambioTarea
                 'La tarea ' . $nombre . ' ahora vence el ' . $vence . '.',
                 route('tareas'),
             ],
+            TareaEstadoCambiado::REACTIVADA => [
+                'tarea_reprogramada',
+                'Tarea reactivada',
+                'La tarea ' . $nombre . ' estaba vencida: se reprogramó para el ' . $vence . ' y volvió a pendiente.',
+                route('tareas'),
+            ],
             TareaEstadoCambiado::A_PAPELERA => [
                 'tarea_papelera',
                 'Tarea enviada a la papelera',

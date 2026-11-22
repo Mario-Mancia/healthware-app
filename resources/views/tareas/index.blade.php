@@ -125,64 +125,87 @@
                                 <small>{{ $tarea->vencimientoRelativo() }}</small>
                             </p>
 
-                            <div class="nota-acciones">
-                                @if($tarea->estado === 'pendiente')
-                                    <form method="POST" action="{{ route('tareas.estado', ['tarea' => $tarea->id]) }}">
+                            @if($vencida)
+                                {{-- Vencida: solo se puede reprogramar (vuelve a pendiente) o eliminar --}}
+                                <div class="nota-acciones nota-acciones-vencida">
+                                    <button type="button" class="btn btn-tonal btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditarTarea"
+                                            data-url="{{ route('tareas.actualizar', ['tarea' => $tarea->id]) }}"
+                                            data-titulo="{{ $tarea->titulo }}"
+                                            data-vencimiento=""
+                                            title="Reprogramar el vencimiento (vuelve a pendiente)" aria-label="Reprogramar el vencimiento">
+                                        <span class="material-symbols-outlined">edit_calendar</span>
+                                        Reprogramar
+                                    </button>
+
+                                    <form method="POST" action="{{ route('tareas.eliminar', ['tarea' => $tarea->id]) }}"
+                                          data-confirmar="¿Enviar la tarea &quot;{{ $tarea->titulo }}&quot; a la papelera?">
                                         @csrf
-                                        @method('PUT')
-                                        <input type="hidden" name="estado" value="en_progreso">
-                                        <button type="submit" class="hw-action-button" title="Iniciar" aria-label="Iniciar la tarea">
-                                            <span class="material-symbols-outlined">play_arrow</span>
+                                        @method('DELETE')
+                                        <button type="submit" class="hw-action-button hw-action-delete" title="Enviar a la papelera" aria-label="Enviar a la papelera">
+                                            <span class="material-symbols-outlined">delete</span>
                                         </button>
                                     </form>
-                                @else
-                                    <form method="POST" action="{{ route('tareas.estado', ['tarea' => $tarea->id]) }}">
+                                </div>
+                            @else
+                                <div class="nota-acciones">
+                                    @if($tarea->estado === 'pendiente')
+                                        <form method="POST" action="{{ route('tareas.estado', ['tarea' => $tarea->id]) }}">
+                                            @csrf
+                                            @method('PUT')
+                                            <input type="hidden" name="estado" value="en_progreso">
+                                            <button type="submit" class="hw-action-button" title="Iniciar" aria-label="Iniciar la tarea">
+                                                <span class="material-symbols-outlined">play_arrow</span>
+                                            </button>
+                                        </form>
+                                    @else
+                                        <form method="POST" action="{{ route('tareas.estado', ['tarea' => $tarea->id]) }}">
+                                            @csrf
+                                            @method('PUT')
+                                            <input type="hidden" name="estado" value="pendiente">
+                                            <button type="submit" class="hw-action-button" title="Volver a pendiente" aria-label="Volver a pendiente">
+                                                <span class="material-symbols-outlined">pause</span>
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    <form method="POST" action="{{ route('tareas.estado', ['tarea' => $tarea->id]) }}"
+                                          data-confirmar="¿Completar la tarea &quot;{{ $tarea->titulo }}&quot;? Saldrá del pizarrón y quedará en la papelera.">
                                         @csrf
                                         @method('PUT')
-                                        <input type="hidden" name="estado" value="pendiente">
-                                        <button type="submit" class="hw-action-button" title="Volver a pendiente" aria-label="Volver a pendiente">
-                                            <span class="material-symbols-outlined">pause</span>
+                                        <input type="hidden" name="estado" value="completada">
+                                        <button type="submit" class="hw-action-button nota-completar" title="Completar" aria-label="Completar la tarea">
+                                            <span class="material-symbols-outlined">check_circle</span>
                                         </button>
                                     </form>
-                                @endif
 
-                                <form method="POST" action="{{ route('tareas.estado', ['tarea' => $tarea->id]) }}"
-                                      data-confirmar="¿Completar la tarea &quot;{{ $tarea->titulo }}&quot;? Saldrá del pizarrón y quedará en la papelera.">
-                                    @csrf
-                                    @method('PUT')
-                                    <input type="hidden" name="estado" value="completada">
-                                    <button type="submit" class="hw-action-button nota-completar" title="Completar" aria-label="Completar la tarea">
-                                        <span class="material-symbols-outlined">check_circle</span>
+                                    <button type="button" class="hw-action-button" data-bs-toggle="modal" data-bs-target="#modalEditarTarea"
+                                            data-url="{{ route('tareas.actualizar', ['tarea' => $tarea->id]) }}"
+                                            data-titulo="{{ $tarea->titulo }}"
+                                            data-vencimiento="{{ $tarea->fecha_vencimiento?->format('Y-m-d\TH:i') }}"
+                                            title="Cambiar vencimiento" aria-label="Cambiar el vencimiento">
+                                        <span class="material-symbols-outlined">edit_calendar</span>
                                     </button>
-                                </form>
 
-                                <button type="button" class="hw-action-button" data-bs-toggle="modal" data-bs-target="#modalEditarTarea"
-                                        data-url="{{ route('tareas.actualizar', ['tarea' => $tarea->id]) }}"
-                                        data-titulo="{{ $tarea->titulo }}"
-                                        data-vencimiento="{{ $tarea->fecha_vencimiento?->format('Y-m-d\TH:i') }}"
-                                        title="Cambiar vencimiento" aria-label="Cambiar el vencimiento">
-                                    <span class="material-symbols-outlined">edit_calendar</span>
-                                </button>
+                                    <form method="POST" action="{{ route('tareas.estado', ['tarea' => $tarea->id]) }}"
+                                          data-confirmar="¿Cancelar la tarea &quot;{{ $tarea->titulo }}&quot;? Saldrá del pizarrón y quedará en la papelera.">
+                                        @csrf
+                                        @method('PUT')
+                                        <input type="hidden" name="estado" value="cancelada">
+                                        <button type="submit" class="hw-action-button" title="Cancelar tarea" aria-label="Cancelar la tarea">
+                                            <span class="material-symbols-outlined">cancel</span>
+                                        </button>
+                                    </form>
 
-                                <form method="POST" action="{{ route('tareas.estado', ['tarea' => $tarea->id]) }}"
-                                      data-confirmar="¿Cancelar la tarea &quot;{{ $tarea->titulo }}&quot;? Saldrá del pizarrón y quedará en la papelera.">
-                                    @csrf
-                                    @method('PUT')
-                                    <input type="hidden" name="estado" value="cancelada">
-                                    <button type="submit" class="hw-action-button" title="Cancelar tarea" aria-label="Cancelar la tarea">
-                                        <span class="material-symbols-outlined">cancel</span>
-                                    </button>
-                                </form>
-
-                                <form method="POST" action="{{ route('tareas.eliminar', ['tarea' => $tarea->id]) }}"
-                                      data-confirmar="¿Enviar la tarea &quot;{{ $tarea->titulo }}&quot; a la papelera?">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="hw-action-button hw-action-delete" title="Enviar a la papelera" aria-label="Enviar a la papelera">
-                                        <span class="material-symbols-outlined">delete</span>
-                                    </button>
-                                </form>
-                            </div>
+                                    <form method="POST" action="{{ route('tareas.eliminar', ['tarea' => $tarea->id]) }}"
+                                          data-confirmar="¿Enviar la tarea &quot;{{ $tarea->titulo }}&quot; a la papelera?">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="hw-action-button hw-action-delete" title="Enviar a la papelera" aria-label="Enviar a la papelera">
+                                            <span class="material-symbols-outlined">delete</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            @endif
                         </article>
                     @endforeach
                 </div>
@@ -307,7 +330,7 @@
                                 </div>
                             </div>
                             <div class="col-12">
-                                <p class="hw-field-hint mb-0">No puede ser anterior a este momento ni mayor a 30 días. Se volverá a avisar cuando venza.</p>
+                                <p class="hw-field-hint mb-0">No puede ser anterior a este momento ni mayor a 30 días. Si la tarea estaba vencida, vuelve a pendiente. Se volverá a avisar cuando venza.</p>
                             </div>
                         </div>
                     </div>

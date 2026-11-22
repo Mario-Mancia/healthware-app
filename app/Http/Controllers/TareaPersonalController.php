@@ -177,14 +177,14 @@ class TareaPersonalController extends Controller
     }
 
     /**
-     * Las tareas son privadas: nadie accede a las de otro usuario.
+     * Las tareas son privadas: nadie accede a las de otro usuario. Se responde
+     * 404 (y no 403) para no revelar siquiera que la tarea existe.
      */
     private function autorizarPropietario(TareaPersonal $tarea): void
     {
         abort_unless(
             (int) $tarea->id_usuario === (int) $this->usuarioActual()->getKey(),
-            403,
-            'No puede acceder a las tareas de otro usuario.'
+            404
         );
     }
 }

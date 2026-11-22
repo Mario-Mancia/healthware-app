@@ -32,3 +32,8 @@ Schedule::command('tareas:depurar')
 Schedule::command('referencias:vencer')
     ->dailyAt('01:00')
     ->withoutOverlapping();
+
+// Notificaciones de más de 30 días (leídas o no): borrado real.
+Schedule::command('notificaciones:purgar')
+    ->dailyAt('03:00')
+    ->withoutOverlapping();

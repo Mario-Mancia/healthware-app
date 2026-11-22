@@ -24,6 +24,7 @@ class TareaEstadoCambiado implements ShouldDispatchAfterCommit
     public const COMPLETADA = 'completada';
     public const CANCELADA = 'cancelada';
     public const REPROGRAMADA = 'reprogramada';
+    public const REACTIVADA = 'reactivada';
     public const A_PAPELERA = 'a_papelera';
     public const VENCIDA_A_PAPELERA = 'vencida_a_papelera';
     public const RESTAURADA = 'restaurada';

@@ -87,7 +87,7 @@
 
     if ($claseNotificacion && $usuario) {
         try {
-            $consultaNotificaciones = $claseNotificacion::query()->where('id_usuario', $usuario->id);
+            $consultaNotificaciones = $claseNotificacion::query()->where('id_usuario', $usuario->id)->where('created_at', '>', now()->subDays(\App\Models\Notificacion::DIAS_RETENCION));
             $notifPendientes = (clone $consultaNotificaciones)->whereNull('leido_en')->count();
             $notifRecientes = (clone $consultaNotificaciones)->orderByDesc('created_at')->limit(5)->get();
         } catch (\Throwable $e) {
@@ -173,10 +173,18 @@
                         <span>{{ $notifPendientes }} sin leer</span>
                     </div>
 
+                    <form method="POST" action="{{ route('notificaciones.leer_todas') }}" class="px-3 pb-2 d-flex justify-content-end">
+                        @csrf
+                        @method('PUT')
+                        <button type="submit" class="btn btn-text btn-sm" @disabled($notifPendientes === 0)>
+                            <span class="material-symbols-outlined">done_all</span>
+                            Marcar todas como leídas
+                        </button>
+                    </form>
                     <div class="app-notif-list">
                         @forelse($notifRecientes as $notificacion)
                             @php $sinLeer = empty($notificacion->leido_en); @endphp
-                            <a href="{{ $notificacion->enlace ?: route('notificaciones') }}"
+                            <a href="{{ route('notificaciones.abrir', ['id' => $notificacion->id]) }}"
                                class="app-notif-item {{ $sinLeer ? 'is-unread' : '' }}">
                                 <span class="app-notif-icon">
                                     <span class="material-symbols-outlined">{{ $iconoNotificacion($notificacion) }}</span>

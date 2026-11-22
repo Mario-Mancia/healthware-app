@@ -2,14 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 
+/**
+ * Notificación interna del sistema. Es personal: solo la ve y la gestiona el
+ * usuario que la recibe (ni siquiera el administrador accede a las ajenas;
+ * para revisar actividad existe la bitácora). Dura como máximo DIAS_RETENCION
+ * días: después se elimina de verdad, aunque no se haya leído.
+ */
 class Notificacion extends Model
 {
     protected $table = 'notificaciones';
+
+    /** Días que se conserva una notificación antes de purgarse. */
+    public const DIAS_RETENCION = 30;
 
     protected $fillable = [
         'id_usuario',
@@ -30,6 +41,33 @@ class Notificacion extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'id_usuario');
+    }
+
+    // Alcances
+
+    public function scopeDeUsuario(Builder $consulta, int $idUsuario): Builder
+    {
+        return $consulta->where('id_usuario', $idUsuario);
+    }
+
+    public function scopeSinLeer(Builder $consulta): Builder
+    {
+        return $consulta->whereNull('leido_en');
+    }
+
+    /**
+     * Solo las que no han cumplido el plazo de retención.
+     */
+    public function scopeVigentes(Builder $consulta): Builder
+    {
+        return $consulta->where('created_at', '>', now()->subDays(self::DIAS_RETENCION));
+    }
+
+    // Estado calculado
+
+    public function fechaDePurga(): ?Carbon
+    {
+        return $this->created_at?->copy()->addDays(self::DIAS_RETENCION);
     }
 
     // Validaciones
@@ -108,39 +146,41 @@ class Notificacion extends Model
         return $ids->count();
     }
 
-    // Consultas
-
-    public static function mostrarTodos(): Collection
-    {
-        return self::with('usuario')
-            ->orderByDesc('created_at')
-            ->get();
-    }
-
-    public static function buscarNotificacionXId(int $id): ?Notificacion
-    {
-        return self::with('usuario')->find($id);
-    }
-
-    // Inserción
+    // Consultas (siempre de un solo usuario)
 
     /**
-     * Notificaciones de un usuario, de la más reciente a la más antigua.
+     * Notificaciones vigentes de un usuario, de la más reciente a la más antigua.
      */
     public static function mostrarDeUsuario(int $idUsuario): Collection
     {
-        return self::with('usuario')
-            ->where('id_usuario', $idUsuario)
+        return static::deUsuario($idUsuario)
+            ->vigentes()
             ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get();
     }
+
+    /**
+     * Una notificación vigente del usuario, o null si no existe o es de otro.
+     */
+    public static function buscarDeUsuario(int $id, int $idUsuario): ?Notificacion
+    {
+        return static::deUsuario($idUsuario)->vigentes()->find($id);
+    }
+
+    public static function contarSinLeer(int $idUsuario): int
+    {
+        return static::deUsuario($idUsuario)->vigentes()->sinLeer()->count();
+    }
+
+    // Lectura
 
     /**
      * Marca como leída una notificación del usuario indicado.
      */
     public static function marcarLeida(int $id, int $idUsuario): bool
     {
-        $notificacion = self::where('id_usuario', $idUsuario)->find($id);
+        $notificacion = static::buscarDeUsuario($id, $idUsuario);
 
         if (!$notificacion) {
             return false;
@@ -153,19 +193,51 @@ class Notificacion extends Model
         return $notificacion->update(['leido_en' => now()]);
     }
 
+    /**
+     * Marca como leídas todas las notificaciones pendientes del usuario.
+     * Devuelve cuántas se marcaron.
+     */
+    public static function marcarTodasLeidas(int $idUsuario): int
+    {
+        return (int) static::deUsuario($idUsuario)
+            ->vigentes()
+            ->sinLeer()
+            ->update(['leido_en' => now()]);
+    }
+
+    // Eliminación (borrado real: las notificaciones no se guardan para siempre)
+
+    public static function eliminarDeUsuario(int $id, int $idUsuario): bool
+    {
+        return static::deUsuario($idUsuario)->whereKey($id)->delete() > 0;
+    }
+
+    /**
+     * Elimina todas las notificaciones del usuario. Devuelve cuántas.
+     */
+    public static function eliminarTodasDeUsuario(int $idUsuario): int
+    {
+        return (int) static::deUsuario($idUsuario)->delete();
+    }
+
+    /**
+     * Elimina las que cumplieron DIAS_RETENCION días, hayan sido leídas o no
+     * (de todo el sistema o de un solo usuario). Devuelve cuántas.
+     */
+    public static function purgarAntiguas(?int $idUsuario = null): int
+    {
+        return (int) static::query()
+            ->where('created_at', '<=', now()->subDays(self::DIAS_RETENCION))
+            ->when($idUsuario, fn (Builder $consulta) => $consulta->where('id_usuario', $idUsuario))
+            ->delete();
+    }
+
+    // Inserción
+
     public static function insertar(array $datos): Notificacion
     {
         $datos = self::rules($datos);
 
         return self::create($datos);
-    }
-
-    // Actualización
-
-    public function actualizar(array $datos): bool
-    {
-        $datos = self::rules($datos, true);
-
-        return $this->update($datos);
     }
 }
