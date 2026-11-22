@@ -40,7 +40,7 @@ class AnuncioGlobalController extends Controller
 
         return view('anuncios_globales.index', [
             'anuncios' => AnuncioGlobal::listarPara($usuario),
-            'esAdmin' => $this->esAdministrador($usuario),
+            'esAdmin' => $this->esAdministrador(),
             'idUsuario' => $usuario->id,
         ]);
     }
@@ -58,7 +58,7 @@ class AnuncioGlobalController extends Controller
 
         return view('anuncios_globales.ver', [
             'anuncio' => $anuncio,
-            'esAdmin' => $this->esAdministrador($usuario),
+            'esAdmin' => $this->esAdministrador(),
             'esDestinatario' => $anuncio->esDestinatario($usuario),
         ]);
     }
@@ -262,17 +262,12 @@ class AnuncioGlobalController extends Controller
         return request()->user();
     }
 
-    private function esAdministrador(Usuario $usuario): bool
-    {
-        return $usuario->tieneRol(Usuario::ROL_ADMINISTRADOR);
-    }
-
     /**
      * Segunda barrera, además del middleware de rol de las rutas.
      */
     private function exigirAdministrador(): void
     {
-        abort_unless($this->esAdministrador($this->usuario()), 403, 'Solo el administrador puede gestionar anuncios.');
+        abort_unless($this->esAdministrador(), 403, 'Solo el administrador puede gestionar anuncios.');
     }
 
     private function noDisponible(): RedirectResponse
