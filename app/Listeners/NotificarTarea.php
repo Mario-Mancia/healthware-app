@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\TareaPorVencer;
 use App\Models\Notificacion;
+use App\Models\TareaPersonal;
 
 /**
  * Avisa al propietario de una tarea de su recordatorio o su vencimiento.
@@ -21,7 +22,8 @@ class NotificarTarea
             $esVencida ? 'tarea_vencida' : 'tarea_recordatorio',
             $esVencida ? 'Tarea vencida' : 'Recordatorio de tarea',
             $esVencida
-                ? 'La tarea "' . $tarea->titulo . '" venció.'
+                ? 'La tarea "' . $tarea->titulo . '" venció. Reprograme su vencimiento en las próximas '
+                    . TareaPersonal::HORAS_GRACIA_VENCIDA . ' h o pasará a la papelera.'
                 : 'Recuerde: "' . $tarea->titulo . '"'
                     . ($tarea->fecha_vencimiento ? ' vence el ' . $tarea->fecha_vencimiento->format('d/m/Y H:i') . '.' : '.'),
             route('tareas')

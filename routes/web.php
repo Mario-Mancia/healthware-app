@@ -381,6 +381,12 @@ Route::middleware(['auth', 'rol', 'no-cache'])->group(function () {
             Route::put('tareas/{tarea}/estado', [TareaPersonalController::class, 'cambiarEstadoTarea'])->whereNumber('tarea')->name('tareas.estado');
             Route::delete('tareas/{tarea}', [TareaPersonalController::class, 'eliminarTarea'])->whereNumber('tarea')->name('tareas.eliminar');
 
+            // Papelera de tareas personales
+            Route::get('tareas/papelera', [TareaPersonalController::class, 'papelera'])->name('tareas.papelera');
+            Route::delete('tareas/papelera', [TareaPersonalController::class, 'vaciarPapelera'])->name('tareas.papelera.vaciar');
+            Route::put('tareas/papelera/{id}/restaurar', [TareaPersonalController::class, 'restaurarTarea'])->whereNumber('id')->name('tareas.restaurar');
+            Route::delete('tareas/papelera/{id}', [TareaPersonalController::class, 'purgarTarea'])->whereNumber('id')->name('tareas.purgar');
+
         });
 
     });

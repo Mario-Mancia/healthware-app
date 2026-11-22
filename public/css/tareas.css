@@ -1,0 +1,144 @@
+/* ============================================================
+   HEALTHWARE - ESTILOS DE LAS VISTAS: Mis tareas y Papelera de tareas
+   Archivo: public/css/tareas.css
+   Blade: resources/views/tareas/index.blade.php
+          resources/views/tareas/papelera.blade.php
+   ============================================================ */
+
+/* ----- Pizarrón: cuadrícula de notas pequeñas ----- */
+.pizarron {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+    gap: 0.75rem;
+    padding: 0 1.25rem 1.25rem;
+}
+
+.nota {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+    padding: 0.7rem 0.8rem 0.5rem;
+    background-color: var(--md-sys-color-surface-container-lowest);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-top: 4px solid var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-lg);
+    transition: box-shadow var(--md-sys-motion-duration-short), transform var(--md-sys-motion-duration-short);
+}
+
+.nota:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* Color de la franja superior según la prioridad */
+.nota-baja { border-top-color: var(--md-sys-color-outline); }
+.nota-normal { border-top-color: var(--hw-info); }
+.nota-alta { border-top-color: var(--hw-warning); }
+.nota-urgente { border-top-color: var(--md-sys-color-error); }
+
+/* Vencidas: al final del pizarrón y atenuadas */
+.nota.is-vencida {
+    background-color: var(--md-sys-color-surface-container-low);
+    border-top-color: var(--md-sys-color-error);
+    opacity: 0.85;
+}
+
+.nota.is-vencida .nota-titulo { text-decoration: line-through; text-decoration-thickness: 1px; }
+.nota.is-vencida .nota-vence { color: var(--md-sys-color-error); font-weight: 600; }
+
+.nota.is-progreso { box-shadow: inset 3px 0 0 var(--md-sys-color-primary); }
+
+.nota-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+}
+
+.nota-cabecera .hw-status { padding: 0.2rem 0.55rem; font-size: 0.7rem; }
+
+.nota-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.nota-estado .material-symbols-outlined { font-size: 1rem; }
+
+.nota-titulo {
+    margin: 0;
+    overflow: hidden;
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
+}
+
+.nota-descripcion {
+    margin: 0;
+    overflow: hidden;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.78rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
+}
+
+.nota-vence {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.74rem;
+}
+
+.nota-vence .material-symbols-outlined { font-size: 1rem; }
+.nota-vence small { flex-basis: 100%; padding-left: 1.25rem; font-size: 0.7rem; opacity: 0.85; }
+
+.nota-acciones {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 0.2rem;
+    border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.nota-acciones form { display: inline; margin: 0; }
+.nota-acciones .hw-action-button { width: 32px; height: 32px; }
+.nota-acciones .hw-action-button .material-symbols-outlined { font-size: 1.15rem; }
+.nota-acciones .nota-completar:hover { color: var(--hw-success); }
+
+/* ----- Atajos de vencimiento y campos de los modales ----- */
+.hw-atajos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.hw-textarea-md { min-height: 6rem; }
+
+/* El botón de nueva tarea deshabilitado conserva su aspecto legible */
+.hw-create-button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+@media (max-width: 575.98px) {
+    .pizarron { grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)); padding: 0 0.9rem 0.9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nota { transition: none; }
+    .nota:hover { transform: none; }
+}

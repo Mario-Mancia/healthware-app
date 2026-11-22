@@ -22,6 +22,12 @@ Schedule::command('tareas:recordatorios')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Tareas vencidas hacia la papelera y purga (borrado real) de la papelera de
+// tareas a los 30 días.
+Schedule::command('tareas:depurar')
+    ->hourly()
+    ->withoutOverlapping();
+
 // Referencias pendientes que pasaron su plazo.
 Schedule::command('referencias:vencer')
     ->dailyAt('01:00')

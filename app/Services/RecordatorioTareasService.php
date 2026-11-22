@@ -10,15 +10,20 @@ use App\Models\TareaPersonal;
  *
  * Es seguro ejecutarlo más de una vez (o desde dos procesos a la vez):
  * cada aviso se "reserva" con un UPDATE condicional sobre su marca de envío,
- * de modo que solo quien logra la reserva notifica. Las tareas completadas
- * o canceladas no generan avisos y reprogramar una tarea reinicia sus marcas.
+ * de modo que solo quien logra la reserva notifica. Las tareas completadas,
+ * canceladas o en la papelera no generan avisos y reprogramar una tarea
+ * reinicia sus marcas.
+ *
+ * Se ejecuta con el comando programado (todo el sistema) y también al abrir
+ * el pizarrón (solo las tareas del usuario), de modo que los avisos no
+ * dependen únicamente de que el planificador esté corriendo.
  */
 class RecordatorioTareasService
 {
     /**
      * @return array{recordatorios:int, vencidas:int}
      */
-    public function procesar(): array
+    public function procesar(?int $idUsuario = null): array
     {
         $ahora = now();
 
@@ -27,23 +32,26 @@ class RecordatorioTareasService
                 'fecha_recordatorio',
                 'recordatorio_enviado_en',
                 'recordatorio',
-                $ahora
+                $ahora,
+                $idUsuario
             ),
             'vencidas' => $this->enviar(
                 'fecha_vencimiento',
                 'aviso_vencimiento_enviado_en',
                 'vencida',
-                $ahora
+                $ahora,
+                $idUsuario
             ),
         ];
     }
 
-    private function enviar(string $campoFecha, string $campoMarca, string $tipo, $ahora): int
+    private function enviar(string $campoFecha, string $campoMarca, string $tipo, $ahora, ?int $idUsuario): int
     {
         $enviados = 0;
 
         $pendientes = TareaPersonal::query()
             ->abiertas()
+            ->when($idUsuario, fn ($consulta) => $consulta->where('id_usuario', $idUsuario))
             ->whereNotNull($campoFecha)
             ->where($campoFecha, '<=', $ahora)
             ->whereNull($campoMarca)
