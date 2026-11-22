@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlergiaController;
 use App\Http\Controllers\AnuncioGlobalController;
+use App\Http\Controllers\TicketController;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\CitaController;
 use App\Http\Controllers\CondicionMedicaController;
@@ -79,6 +80,15 @@ Route::middleware(['auth', 'rol', 'no-cache'])->group(function () {
         Route::post('/anuncios-globales/{id}/confirmar', [AnuncioGlobalController::class, 'confirmar'])->whereNumber('id')->name('anuncios_globales.confirmar');
         Route::get('/anuncios-globales/adjuntos/{id}', [AnuncioGlobalController::class, 'descargar'])->whereNumber('id')->name('anuncios_globales.adjunto');
 
+        // Soporte y reportes (tickets): cualquier usuario abre y sigue los suyos
+        Route::get('/tickets', [TicketController::class, 'index'])->name('tickets');
+        Route::get('/tickets/nuevo', [TicketController::class, 'crear'])->name('tickets.crear');
+        Route::post('/tickets/insertar', [TicketController::class, 'insertar'])->name('tickets.insertar');
+        Route::get('/tickets/{id}', [TicketController::class, 'ver'])->whereNumber('id')->name('tickets.ver');
+        Route::get('/tickets/adjuntos/{id}', [TicketController::class, 'descargar'])->whereNumber('id')->name('tickets.adjunto');
+        Route::post('/tickets/{id}/nota', [TicketController::class, 'comentar'])->whereNumber('id')->name('tickets.comentar');
+        Route::post('/tickets/{id}/cancelar', [TicketController::class, 'cancelar'])->whereNumber('id')->name('tickets.cancelar');
+
         // ADMINISTRADOR
         Route::middleware('rol:Administrador')->group(function () {
 
@@ -151,6 +161,12 @@ Route::middleware(['auth', 'rol', 'no-cache'])->group(function () {
             Route::get('/anuncios-globales/nuevo', [AnuncioGlobalController::class, 'crear'])->name('anuncios_globales.crear');
             Route::get('/anuncios-globales/{id}/editar', [AnuncioGlobalController::class, 'editar'])->whereNumber('id')->name('anuncios_globales.editar');
             Route::delete('/anuncios-globales/eliminar/{id}', [AnuncioGlobalController::class, 'eliminar'])->whereNumber('id')->name('anuncios_globales.eliminar');
+
+            // Tickets: atención (solo administradores)
+            Route::post('/tickets/{id}/tomar', [TicketController::class, 'tomar'])->whereNumber('id')->name('tickets.tomar');
+            Route::post('/tickets/{id}/liberar', [TicketController::class, 'liberar'])->whereNumber('id')->name('tickets.liberar');
+            Route::post('/tickets/{id}/completar', [TicketController::class, 'completar'])->whereNumber('id')->name('tickets.completar');
+            Route::post('/tickets/{id}/descartar', [TicketController::class, 'descartar'])->whereNumber('id')->name('tickets.descartar');
 
 
             // Papelera de datos clínicos

@@ -12,7 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as ColeccionSimple;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Services\AlmacenArchivos;
 
 /**
  * Anuncio de comunicación interna publicado por el administrador.
@@ -251,10 +251,10 @@ class AnuncioGlobal extends Model
      */
     public static function publicar(array $datos, array $archivos, Usuario $administrador): self
     {
-        $anuncio = null;
+        $guardados = [];
 
         try {
-            return DB::transaction(function () use ($datos, $archivos, $administrador, &$anuncio) {
+            return DB::transaction(function () use ($datos, $archivos, $administrador, &$guardados) {
                 $anuncio = new static();
                 $anuncio->fill(self::soloCamposDeContenido($datos));
                 $anuncio->id_destinatario = $datos['id_destinatario'] ?? null;
@@ -264,7 +264,7 @@ class AnuncioGlobal extends Model
                 $anuncio->save();
 
                 foreach ($archivos as $archivo) {
-                    AnuncioAdjunto::guardar($anuncio, $archivo);
+                    $guardados[] = AnuncioAdjunto::guardar($anuncio, $archivo);
                 }
 
                 event(new AnuncioCambiado($anuncio, AnuncioCambiado::PUBLICADO));
@@ -272,8 +272,9 @@ class AnuncioGlobal extends Model
                 return $anuncio;
             });
         } catch (\Throwable $error) {
-            if ($anuncio !== null && $anuncio->id) {
-                Storage::disk('local')->deleteDirectory('anuncios/' . $anuncio->id);
+            // Si algo falló, los archivos ya guardados no deben quedar huérfanos.
+            foreach ($guardados as $adjunto) {
+                $adjunto->eliminarArchivo();
             }
 
             throw $error;
@@ -357,9 +358,11 @@ class AnuncioGlobal extends Model
             return null;
         }
 
+        $rutas = $anuncio->adjuntos()->pluck('ruta')->all();
+
         DB::transaction(fn () => $anuncio->delete());
 
-        Storage::disk('local')->deleteDirectory('anuncios/' . $anuncio->id);
+        AlmacenArchivos::eliminarVarios($rutas);
 
         return $anuncio;
     }

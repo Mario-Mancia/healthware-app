@@ -44,6 +44,12 @@ use Illuminate\Database\Eloquent\Collection;
         public const PAGO_RECHAZADO = 'PAGO_RECHAZADO';
         public const CONFIRMADO = 'CONFIRMADO';
         public const DESCARGADO = 'DESCARGADO';
+        public const TOMADO = 'TOMADO';
+        public const LIBERADO = 'LIBERADO';
+        public const COMPLETADO = 'COMPLETADO';
+        public const DESCARTADO = 'DESCARTADO';
+        public const CANCELADO = 'CANCELADO';
+        public const COMENTADO = 'COMENTADO';
 
 
         public function usuario(): BelongsTo
@@ -69,6 +75,12 @@ use Illuminate\Database\Eloquent\Collection;
                 self::PAGO_RECHAZADO,
                 self::CONFIRMADO,
                 self::DESCARGADO,
+                self::TOMADO,
+                self::LIBERADO,
+                self::COMPLETADO,
+                self::DESCARTADO,
+                self::CANCELADO,
+                self::COMENTADO,
             ];
         }
 

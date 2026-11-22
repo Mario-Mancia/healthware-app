@@ -11,7 +11,7 @@ use App\Models\Usuario;
 use App\Services\RecordatorioAnunciosService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use App\Services\AlmacenArchivos;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -109,10 +109,12 @@ class AnuncioGlobalController extends Controller
             return $this->noDisponible();
         }
 
-        if (!$adjunto->existeArchivo()) {
+        $respuesta = AlmacenArchivos::descargar($adjunto->ruta, $adjunto->nombre_original);
+
+        if ($respuesta === null) {
             return redirect()
                 ->route('anuncios_globales.ver', ['id' => $anuncio->id])
-                ->with('error', 'El archivo ya no está disponible en el servidor.');
+                ->with('error', AlmacenArchivos::NO_DISPONIBLE);
         }
 
         Bitacora::registrar(
@@ -122,7 +124,7 @@ class AnuncioGlobalController extends Controller
             $this->recortar('Descargó «' . $adjunto->nombre_original . '» del anuncio «' . $anuncio->titulo . '».')
         );
 
-        return Storage::disk('local')->download($adjunto->ruta, $adjunto->nombre_original);
+        return $respuesta;
     }
 
     // Administración

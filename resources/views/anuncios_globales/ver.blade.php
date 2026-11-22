@@ -152,10 +152,14 @@
                                     <strong>{{ $adjunto->nombre_original }}</strong>
                                     <span class="hw-muted small">{{ $adjunto->tamanhoLegible() }}</span>
                                 </div>
-                                <a href="{{ route('anuncios_globales.adjunto', ['id' => $adjunto->id]) }}" class="btn btn-tonal btn-sm">
-                                    <span class="material-symbols-outlined">download</span>
-                                    Descargar
-                                </a>
+                                @if($adjunto->existeArchivo())
+                                    <a href="{{ route('anuncios_globales.adjunto', ['id' => $adjunto->id]) }}" class="btn btn-tonal btn-sm">
+                                        <span class="material-symbols-outlined">download</span>
+                                        Descargar
+                                    </a>
+                                @else
+                                    <span class="hw-status hw-status-neutral"><span class="hw-status-dot"></span>Archivo no disponible</span>
+                                @endif
                             </li>
                         @endforeach
                     </ul>

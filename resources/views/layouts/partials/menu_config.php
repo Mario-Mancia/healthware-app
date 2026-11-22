@@ -203,6 +203,12 @@ $menuModulos = [
                 'roles' => $rolesTodosConContador,
             ],
             [
+                'ruta' => 'tickets',
+                'etiqueta' => 'Soporte y reportes',
+                'icono' => 'support_agent',
+                'roles' => $rolesTodosConContador,
+            ],
+            [
                 'ruta' => 'notificaciones',
                 'etiqueta' => 'Notificaciones',
                 'icono' => 'notifications',
