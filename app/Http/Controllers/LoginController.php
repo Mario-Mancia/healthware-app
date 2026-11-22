@@ -79,6 +79,7 @@ class LoginController extends Controller
 
                 // Contabilizar el intento fallido.
                 RateLimiter::hit($claveLimite, 300);
+                app(\App\Services\AvisosDeCuenta::class)->alFallarInicioDeSesion($correo, $claveLimite);
 
                 Auth::logout();
 
@@ -122,6 +123,7 @@ class LoginController extends Controller
         );
 
         RateLimiter::hit($claveLimite, 300);
+        app(\App\Services\AvisosDeCuenta::class)->alFallarInicioDeSesion($correo, $claveLimite);
 
         return redirect()
             ->route('login')

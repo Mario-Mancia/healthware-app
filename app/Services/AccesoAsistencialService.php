@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\RelacionAsistencialCambiada;
 use App\Models\AuditoriaExpediente;
 use App\Models\Cita;
 use App\Models\RegistroMedico;
@@ -250,6 +251,7 @@ class AccesoAsistencialService
             }
 
             $relacion->update($cambios);
+            event(new RelacionAsistencialCambiada($relacion, $anterior, $nuevo, $actor));
 
             AuditoriaExpediente::registrar(
                 $relacion->id_paciente,

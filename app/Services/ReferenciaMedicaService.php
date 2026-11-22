@@ -6,6 +6,8 @@ use App\Events\CitaCancelada;
 use App\Events\CitaProgramada;
 use App\Events\ReferenciaMedicaAtendida;
 use App\Events\ReferenciaMedicaCreada;
+use App\Events\ReferenciaMedicaRechazada;
+use App\Events\ReferenciaMedicaVencida;
 use App\Models\AuditoriaExpediente;
 use App\Models\Cita;
 use App\Models\Doctor;
@@ -171,7 +173,11 @@ class ReferenciaMedicaService
      */
     public function rechazar(ReferenciaMedica $referencia, string $motivo): ReferenciaMedica
     {
-        return $this->cerrarPendiente($referencia, ReferenciaMedica::ESTADO_RECHAZADA, $motivo);
+        $referencia = $this->cerrarPendiente($referencia, ReferenciaMedica::ESTADO_RECHAZADA, $motivo);
+
+        event(new ReferenciaMedicaRechazada($referencia, $motivo));
+
+        return $referencia;
     }
 
     /**
@@ -281,11 +287,25 @@ class ReferenciaMedicaService
         $total = 0;
 
         foreach (ReferenciaMedica::DIAS_VIGENCIA as $prioridad => $dias) {
-            $total += ReferenciaMedica::query()
+            $vencidas = ReferenciaMedica::query()
                 ->where('estado', ReferenciaMedica::ESTADO_PENDIENTE)
                 ->where('prioridad', $prioridad)
                 ->where('fecha_referencia', '<', now()->subDays($dias))
-                ->update(['estado' => ReferenciaMedica::ESTADO_VENCIDA]);
+                ->get();
+
+            foreach ($vencidas as $referencia) {
+                // Reserva condicional: si otro proceso ya la cerró, no se avisa dos veces.
+                $actualizadas = ReferenciaMedica::query()
+                    ->whereKey($referencia->getKey())
+                    ->where('estado', ReferenciaMedica::ESTADO_PENDIENTE)
+                    ->update(['estado' => ReferenciaMedica::ESTADO_VENCIDA]);
+
+                if ($actualizadas === 1) {
+                    $total++;
+
+                    event(new ReferenciaMedicaVencida($referencia));
+                }
+            }
         }
 
         return $total;

@@ -42,3 +42,8 @@ Schedule::command('notificaciones:purgar')
 Schedule::command('anuncios:recordatorios')
     ->everyMinute()
     ->withoutOverlapping();
+
+// Resumen diario para recepción: referencias pendientes de programar.
+Schedule::command('referencias:resumen-recepcion')
+    ->dailyAt('07:30')
+    ->withoutOverlapping();

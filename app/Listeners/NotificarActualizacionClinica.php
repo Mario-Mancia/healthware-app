@@ -24,7 +24,7 @@ class NotificarActualizacionClinica
         $idsUsuarios = Doctor::query()->whereIn('id', $idsDoctores)->pluck('usuario_id');
 
         foreach ($idsUsuarios as $idUsuario) {
-            Notificacion::notificar(
+            Notificacion::notificarUnaVez(
                 (int) $idUsuario,
                 'actualizacion_clinica',
                 'Información clínica actualizada',

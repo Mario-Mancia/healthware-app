@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\AccesoExpedienteRegistrado;
+use App\Events\AccesoExcepcionalRevocado;
 use App\Models\AccesoExcepcional;
 use App\Models\AuditoriaExpediente;
 use App\Models\Doctor;
@@ -60,6 +61,9 @@ class AccesoExcepcionalService
     public function revocar(AccesoExcepcional $acceso, Usuario $actor): AccesoExcepcional
     {
         return DB::transaction(function () use ($acceso, $actor) {
+            // Solo se avisa si el acceso seguía vigente (no si ya había vencido o se revocó).
+            $estabaVigente = $acceso->estaVigente();
+
             $acceso->update([
                 'estado' => AccesoExcepcional::ESTADO_REVOCADO,
                 'fecha_expiracion' => now(),
@@ -73,6 +77,10 @@ class AccesoExcepcionalService
                 'Acceso excepcional revocado por ' . $actor->nombres . ' ' . $actor->apellidos . '.',
                 ['usuario' => $acceso->id_usuario]
             );
+
+            if ($estabaVigente) {
+                event(new AccesoExcepcionalRevocado($acceso, (int) $actor->getKey()));
+            }
 
             return $acceso;
         });

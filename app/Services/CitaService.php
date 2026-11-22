@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Events\CitaCancelada;
 use App\Events\CitaProgramada;
+use App\Events\CitaReprogramada;
 use App\Models\Cita;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -45,6 +46,8 @@ class CitaService
             $cita = Cita::query()->whereKey($cita->getKey())->lockForUpdate()->firstOrFail();
 
             $estadoAnterior = $cita->estado;
+            $fechaAnterior = $cita->fecha_cita->format('Y-m-d');
+            $horaAnterior = substr((string) $cita->hora_inicio, 0, 5);
             $doctorAnterior = (int) $cita->id_doctor;
 
             // Una cita nacida de una referencia conserva paciente y médico.
@@ -90,6 +93,18 @@ class CitaService
                     event(new CitaProgramada($cita));
                 }
 
+                // Misma cita y mismo médico, pero otra fecha u hora: se le avisa.
+                if (
+                    (int) $cita->id_doctor === $doctorAnterior
+                    && !$sinAtencionAntes
+                    && $cita->estado !== 'completada'
+                    && (
+                        $cita->fecha_cita->format('Y-m-d') !== $fechaAnterior
+                        || substr((string) $cita->hora_inicio, 0, 5) !== $horaAnterior
+                    )
+                ) {
+                    event(new CitaReprogramada($cita, $fechaAnterior, $horaAnterior));
+                }
                 if ($cita->estado === 'completada' && $estadoAnterior !== 'completada') {
                     $this->referencias->marcarAtendidaPorCita($cita);
                 }

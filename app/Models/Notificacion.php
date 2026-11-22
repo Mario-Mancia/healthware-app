@@ -146,6 +146,42 @@ class Notificacion extends Model
         return $ids->count();
     }
 
+    /**
+     * Como notificar(), pero si el usuario ya tiene un aviso igual SIN LEER
+     * (mismo tipo, título y enlace) lo actualiza y lo sube al principio en
+     * lugar de crear otro. Evita acumular avisos repetidos mientras la persona
+     * no entra a leerlos.
+     */
+    public static function notificarUnaVez(
+        int $idUsuario,
+        string $tipo,
+        string $titulo,
+        string $mensaje,
+        ?string $enlace = null
+    ): Notificacion {
+        $titulo = mb_substr($titulo, 0, 150);
+
+        $existente = static::deUsuario($idUsuario)
+            ->vigentes()
+            ->sinLeer()
+            ->where('tipo', $tipo)
+            ->where('titulo', $titulo)
+            ->when(
+                $enlace === null,
+                fn (Builder $consulta) => $consulta->whereNull('enlace'),
+                fn (Builder $consulta) => $consulta->where('enlace', $enlace)
+            )
+            ->orderByDesc('id')
+            ->first();
+
+        if ($existente) {
+            $existente->forceFill(['mensaje' => $mensaje, 'created_at' => now()])->save();
+
+            return $existente;
+        }
+
+        return static::notificar($idUsuario, $tipo, $titulo, $mensaje, $enlace);
+    }
     // Consultas (siempre de un solo usuario)
 
     /**
