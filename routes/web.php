@@ -75,8 +75,9 @@ Route::middleware(['auth', 'rol', 'no-cache'])->group(function () {
 
         // Anuncios globales: consulta
         Route::get('/anuncios-globales', [AnuncioGlobalController::class, 'index'])->name('anuncios_globales');
-        Route::get('/anuncios-globales/todos', [AnuncioGlobalController::class, 'mostrarTodos'])->name('anuncios_globales.todos');
-        Route::get('/anuncios-globales/buscar/{id}', [AnuncioGlobalController::class, 'buscar'])->name('anuncios_globales.buscar');
+        Route::get('/anuncios-globales/{id}', [AnuncioGlobalController::class, 'ver'])->whereNumber('id')->name('anuncios_globales.ver');
+        Route::post('/anuncios-globales/{id}/confirmar', [AnuncioGlobalController::class, 'confirmar'])->whereNumber('id')->name('anuncios_globales.confirmar');
+        Route::get('/anuncios-globales/adjuntos/{id}', [AnuncioGlobalController::class, 'descargar'])->whereNumber('id')->name('anuncios_globales.adjunto');
 
         // ADMINISTRADOR
         Route::middleware('rol:Administrador')->group(function () {
@@ -147,6 +148,9 @@ Route::middleware(['auth', 'rol', 'no-cache'])->group(function () {
             // Anuncios globales: administración
             Route::post('/anuncios-globales/insertar', [AnuncioGlobalController::class, 'insertar'])->name('anuncios_globales.insertar');
             Route::put('/anuncios-globales/actualizar/{id}', [AnuncioGlobalController::class, 'actualizar'])->name('anuncios_globales.actualizar');
+            Route::get('/anuncios-globales/nuevo', [AnuncioGlobalController::class, 'crear'])->name('anuncios_globales.crear');
+            Route::get('/anuncios-globales/{id}/editar', [AnuncioGlobalController::class, 'editar'])->whereNumber('id')->name('anuncios_globales.editar');
+            Route::delete('/anuncios-globales/eliminar/{id}', [AnuncioGlobalController::class, 'eliminar'])->whereNumber('id')->name('anuncios_globales.eliminar');
 
 
             // Papelera de datos clínicos

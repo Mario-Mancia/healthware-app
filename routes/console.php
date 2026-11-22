@@ -37,3 +37,8 @@ Schedule::command('referencias:vencer')
 Schedule::command('notificaciones:purgar')
     ->dailyAt('03:00')
     ->withoutOverlapping();
+
+// Anuncios con evento: recordatorio 15 minutos antes de la fecha del evento.
+Schedule::command('anuncios:recordatorios')
+    ->everyMinute()
+    ->withoutOverlapping();

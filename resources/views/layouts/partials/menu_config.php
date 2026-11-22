@@ -198,7 +198,7 @@ $menuModulos = [
         'enlaces' => [
             [
                 'ruta' => 'anuncios_globales',
-                'etiqueta' => 'Anuncios globales',
+                'etiqueta' => 'Anuncios',
                 'icono' => 'campaign',
                 'roles' => $rolesTodosConContador,
             ],
